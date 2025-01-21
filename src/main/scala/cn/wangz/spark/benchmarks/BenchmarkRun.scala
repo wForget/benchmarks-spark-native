@@ -13,9 +13,9 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) {
   def run(): Unit = {
     init()
 
-    val benchmarkName = conf.name.getOrElse(s"${context.benchmarkType} ${conf.scale}GB")
+    val benchmarkName = conf.name.getOrElse(s"${context.benchmarkType} ${conf.scale}")
 
-    val benchmark = new Benchmark(benchmarkName, minNumIters = conf.minNumIters(), warmupTime = 1.millis)
+    val benchmark = new Benchmark(benchmarkName, minNumIters = conf.minNumIters(), warmupTime = 200.millis)
 
     context.querySQLs.foreach { case (name, query) =>
       benchmark.addTimerCase(name) { timer =>
@@ -81,5 +81,5 @@ class BenchmarkConf extends Subcommand("benchmark") {
   val output = opt[String](required = false)
   val database = opt[String](required = false, default = Some("default"))
   val checkResult = opt[Boolean](required = false, default = Some(false))
-  val minNumIters = opt[Int](required = false, default = Some(2))
+  val minNumIters = opt[Int](required = false, default = Some(3))
 }
