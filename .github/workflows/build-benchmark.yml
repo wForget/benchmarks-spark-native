@@ -1,0 +1,104 @@
+name: Build benchmark and generate data
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        default: 'ubuntu-latest'
+        required: false
+        type: string
+      java-version:
+        default: '8'
+        required: false
+        type: string
+      spark-version:
+        default: '3.5.4'
+        required: false
+        type: string
+      spark-binary-version:
+        default: '3.5'
+        required: false
+        type: string
+      scala-version:
+        default: '2.12.17'
+        required: false
+        type: string
+      scala-binary-version:
+        default: '2.12'
+        required: false
+        type: string
+      benchmark:
+        description: 'Benchmark to run (tpcds or tpch)'
+        required: true
+        type: string
+      benchmark-scale:
+        description: 'Scale factor for benchmark, like: tiny, 1, 10, 100, 1000...'
+        required: true
+        type: string
+
+permissions:
+  issues: write
+
+jobs:
+  build-benchmark:
+    name: Build benchmark and generate data
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Get cached benchmark lib
+        id: get-benchmark-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmarks-spark-native-*.jar
+          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
+      - name: Build benchmark lib
+        if: steps.get-benchmark-cache.outputs.cache-hit != 'true'
+        run: |
+          mvn clean package -DskipTests
+          cp target/benchmarks-spark-native-*.jar .
+      - name: Cached benchmark lib
+        if: steps.get-benchmark-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: benchmarks-spark-native-*.jar
+          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
+      - name: Setup Spark
+        uses: ./.github/actions/setup-spark
+        with:
+          spark-version: ${{ inputs.spark-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+      - name: Get cached benchmark data
+        id: get-benchmark-data-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/warehouse/*
+            data/metastore/*
+          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+      - name: Generate data
+        if: steps.get-benchmark-data-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir data
+          WAREHOUSE_PATH=$(pwd)/data/warehouse
+          METASTORE_PATH=$(pwd)/data/metastore
+          BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
+          $SPARK_HOME/bin/spark-submit \
+            --master local\[4\] \
+            --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
+            --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
+            --class cn.wangz.spark.benchmarks.Main \
+            $BENCHMARK_JAR \
+            data --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }}
+      - name: Cached benchmark data
+        if: steps.get-benchmark-data-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/warehouse/*
+            data/metastore/*
+          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}

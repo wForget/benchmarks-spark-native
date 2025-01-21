@@ -79,7 +79,7 @@ def generate_query_speedup_chart(baseline, comparison, label1: str, label2: str,
     ax.yaxis.grid(True)
 
     # Save the plot as an image file
-    plt.savefig(f'{benchmark}_queries_speedup.png', format='png')
+    plt.savefig(f'{benchmark}_queries_speedup_{label2}.png', format='png')
 
 
 def generate_query_comparison_chart(results, labels, benchmark: str, title: str):
@@ -156,8 +156,11 @@ def main(files, labels, benchmark: str, title: str):
             results.append(json.load(f))
     generate_summary(results, labels, benchmark, title)
     generate_query_comparison_chart(results, labels, benchmark, title)
-    if len(files) == 2:
-        generate_query_speedup_chart(results[0], results[1], labels[0], labels[1], benchmark, title)
+
+    baseline = results[0]
+    base_label = labels[0]
+    for i in range(1, len(results)):
+        generate_query_speedup_chart(baseline, results[i], base_label, labels[i], benchmark, title)
 
 if __name__ == '__main__':
     argparse = argparse.ArgumentParser(description='Generate comparison')

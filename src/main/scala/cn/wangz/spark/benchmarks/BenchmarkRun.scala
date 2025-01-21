@@ -5,6 +5,7 @@ import org.apache.spark.sql.{Row, SparkSession}
 import org.rogach.scallop.Subcommand
 
 import java.nio.file.{Files, Paths}
+import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
 class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) {
@@ -14,7 +15,7 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) {
 
     val benchmarkName = conf.name.getOrElse(s"${context.benchmarkType} ${conf.scale}GB")
 
-    val benchmark = new Benchmark(benchmarkName, minNumIters = conf.minNumIters())
+    val benchmark = new Benchmark(benchmarkName, minNumIters = conf.minNumIters(), warmupTime = 1.millis)
 
     context.querySQLs.foreach { case (name, query) =>
       benchmark.addTimerCase(name) { timer =>

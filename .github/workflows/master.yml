@@ -1,0 +1,56 @@
+name: Spark Native Engine Benchmark
+
+on:
+  schedule:
+      - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  build-native-engine:
+    name: Build Native Engine
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: [ '8' ]
+        spark-version: [ '3.5.4' ]
+    uses: ./.github/workflows/build-native-engine.yml
+    with:
+      java-version: ${{ matrix.java-version }}
+      spark-version: ${{ matrix.spark-version }}
+    secrets: inherit
+  build-benchmark:
+    name: Build Benchmark
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: [ '8' ]
+        spark-version: [ '3.5.4' ]
+        benchmark: [ 'tpcds' ]
+        benchmark-scale: [ 'tiny' ]
+    uses: ./.github/workflows/build-benchmark.yml
+    with:
+      java-version: ${{ matrix.java-version }}
+      spark-version: ${{ matrix.spark-version }}
+      benchmark: ${{ matrix.benchmark }}
+      benchmark-scale: ${{ matrix.benchmark-scale }}
+    secrets: inherit
+  run-benchmark:
+    name: Run Benchmark
+    needs: [build-native-engine, build-benchmark]
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: [ '8' ]
+        spark-version: [ '3.5.4' ]
+        benchmark: [ 'tpcds' ]
+        benchmark-scale: [ 'tiny' ]
+    uses: ./.github/workflows/run-benchmark.yml
+    with:
+      java-version: ${{ matrix.java-version }}
+      spark-version: ${{ matrix.spark-version }}
+      benchmark: ${{ matrix.benchmark }}
+      benchmark-scale: ${{ matrix.benchmark-scale }}
+    secrets: inherit
