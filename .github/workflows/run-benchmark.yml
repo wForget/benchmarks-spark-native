@@ -140,7 +140,7 @@ jobs:
             --master local\[4\] \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
-            --conf spark.driver.memory=2g \
+            --conf spark.driver.memory=4g \
             --conf spark.plugins=org.apache.spark.CometPlugin \
             --conf spark.comet.enabled=true \
             --conf spark.shuffle.manager=org.apache.spark.sql.comet.execution.shuffle.CometShuffleManager \
@@ -267,7 +267,7 @@ jobs:
             --master local\[4\] \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
-            --conf spark.driver.memory=2g \
+            --conf spark.driver.memory=4g \
             --conf spark.plugins=org.apache.gluten.GlutenPlugin \
             --conf spark.gluten.enabled=true \
             --conf spark.shuffle.manager=org.apache.spark.shuffle.sort.ColumnarShuffleManager \
@@ -294,19 +294,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Download comet benchmark result
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_comet_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Download gluten benchmark result
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_gluten_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Generate comparison
-        run:
+        run: |
+          ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
             vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
