@@ -146,6 +146,7 @@ jobs:
             --conf spark.shuffle.manager=org.apache.spark.sql.comet.execution.shuffle.CometShuffleManager \
             --conf spark.memory.offHeap.enabled=true \
             --conf spark.memory.offHeap.size=8g \
+            --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
