@@ -183,37 +183,37 @@ jobs:
           path: gluten-velox-bundle-spark*.jar
           key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
 
-#  upload-all-engine:
-#    name: Upload all engine jars
-#    runs-on: ubuntu-latest
-#    needs: [build-comet, build-blaze, build-gluten]
-#    steps:
-#      - name: Get date
-#        id: get-date
-#        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-#      - name: Get cached Datafusion Comet lib
-#        uses: actions/cache/restore@v4
-#        with:
-#          path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
-#          key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
-#          fail-on-cache-miss: 'true'
-#      - name: Get cached Blaze lib
-#        uses: actions/cache/restore@v4
-#        with:
-#          path: blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
-#          key: blaze-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
-#          fail-on-cache-miss: 'true'
-#      - name: Get cached gluten lib
-#        uses: actions/cache/restore@v4
-#        with:
-#          path: gluten-velox-bundle-spark*.jar
-#          key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
-#          fail-on-cache-miss: 'true'
-#      - name: Upload native engine jars
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: spark_native_jars_${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
-#          path: |
-#            comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
-#            blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
-#            gluten-velox-bundle-spark*.jar
+  upload-all-engine:
+    name: Upload all engine jars
+    runs-on: ubuntu-latest
+    needs: [build-comet, build-blaze, build-gluten]
+    steps:
+      - name: Get date
+        id: get-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      - name: Get cached Datafusion Comet lib
+        uses: actions/cache/restore@v4
+        with:
+          path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
+          key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
+          fail-on-cache-miss: 'true'
+      - name: Get cached Blaze lib
+        uses: actions/cache/restore@v4
+        with:
+          path: blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          key: blaze-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          fail-on-cache-miss: 'true'
+      - name: Get cached gluten lib
+        uses: actions/cache/restore@v4
+        with:
+          path: gluten-velox-bundle-spark*.jar
+          key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          fail-on-cache-miss: 'true'
+      - name: Upload native engine jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: spark_native_jars_${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
+          path: |
+            comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
+            blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
+            gluten-velox-bundle-spark*.jar
