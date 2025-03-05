@@ -13,7 +13,7 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) {
   def run(): Unit = {
     init()
 
-    val benchmarkName = conf.name.getOrElse(s"${context.benchmarkType} ${conf.scale}")
+    val benchmarkName = conf.name.getOrElse(s"${context.benchmarkType} ${conf.scale()}")
 
     val benchmark = new Benchmark(benchmarkName, minNumIters = conf.minNumIters(), warmupTime = 200.millis)
 
