@@ -1,6 +1,7 @@
 package cn.wangz.spark.benchmarks
 
 import cn.wangz.spark.benchmarks.benchmark.Benchmark
+import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{Row, SparkSession}
 import org.rogach.scallop.Subcommand
 
@@ -8,7 +9,7 @@ import java.nio.file.{Files, Paths}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
-class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) {
+class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) extends Logging {
 
   def run(): Unit = {
     init()
@@ -19,6 +20,8 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) {
 
     context.querySQLs.foreach { case (name, query) =>
       benchmark.addTimerCase(name) { timer =>
+        logInfo(s"Running benchmark case: $name")
+
         timer.startTiming()
         val rows = spark.sql(query).collect()
         timer.stopTiming()

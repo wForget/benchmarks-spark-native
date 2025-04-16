@@ -17,13 +17,10 @@
 
 package cn.wangz.spark.benchmarks.benchmark
 
-import org.apache.commons.io.output.TeeOutputStream
-
-import java.io.{OutputStream, PrintStream}
+import java.io.OutputStream
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration._
-import scala.util.Try
 
 /**
  * Copy from Apache Spark.
