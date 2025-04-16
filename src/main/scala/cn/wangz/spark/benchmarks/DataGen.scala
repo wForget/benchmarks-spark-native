@@ -51,9 +51,9 @@ class DataGen(context: BenchmarkContext, conf: DataGenConf) {
 }
 
 class DataGenConf extends Subcommand("data") {
-  val `type` = opt[String](required = true)
-  val scale = opt[String](required = true)
-  val format = opt[String](required = false, default = Some("parquet"))
-  val database = opt[String](required = false, default = Some("default"))
-  val checkFileGen = opt[Boolean](required = false, default = Some(false))
+  val `type` = opt[String](required = true, descr = "Benchmark type: tpcds, tpch")
+  val scale = opt[String](required = true, descr = "Scale factor: tiny, 1, 10, 100...")
+  val format = opt[String](required = false, default = Some("parquet"), descr = "Data format of generated data: parquet, orc, csv...")
+  val database = opt[String](required = false, default = Some("default"), descr = "Database name of generated data")
+  val checkFileGen = opt[Boolean](required = false, default = Some(false), descr = "If generate checksum file")
 }

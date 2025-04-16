@@ -75,11 +75,11 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) {
 }
 
 class BenchmarkConf extends Subcommand("benchmark") {
-  val `type` = opt[String](required = true)
-  val scale = opt[String](required = true)
-  val name = opt[String](required = false)
-  val output = opt[String](required = false)
-  val database = opt[String](required = false, default = Some("default"))
-  val checkResult = opt[Boolean](required = false, default = Some(false))
-  val minNumIters = opt[Int](required = false, default = Some(3))
+  val `type` = opt[String](required = true, descr = "Benchmark type: tpcds, tpch")
+  val scale = opt[String](required = true, descr = "Scale factor: tiny, 1, 10, 100...")
+  val name = opt[String](required = false, descr = "The spark benchmark runner name of spark job")
+  val output = opt[String](required = false, descr = "The output file name of benchmark result")
+  val database = opt[String](required = false, default = Some("default"), descr = "Database name of generated data, default is 'default'")
+  val checkResult = opt[Boolean](required = false, default = Some(false), descr = "If check result (hash sum), default is false")
+  val minNumIters = opt[Int](required = false, default = Some(3), descr = "Minimum number of iterations to run, default is 3")
 }
