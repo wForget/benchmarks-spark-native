@@ -22,6 +22,9 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) extends Loggi
       benchmark.addTimerCase(name) { timer =>
         logInfo(s"Running benchmark case: $name")
 
+        // set query to description
+        spark.sparkContext.setJobGroup(s"$name-${timer.iteration}", query)
+
         timer.startTiming()
         val rows = spark.sql(query).collect()
         timer.stopTiming()
