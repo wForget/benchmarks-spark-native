@@ -163,7 +163,6 @@ jobs:
           PROFILES="-Pspark-${{ inputs.spark-binary-version }}" make release
       - name: Run benchmark (First)
         run: |
-          rm $SPARK_HOME/jars/comet-spark-*.jar
           cp datafusion-comet/spark/target/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
@@ -241,7 +240,6 @@ jobs:
           PROFILES="-Pspark-${{ inputs.spark-binary-version }}" make release
       - name: Run benchmark (Second)
         run: |
-          rm $SPARK_HOME/jars/comet-spark-*.jar
           cp datafusion-comet/spark/target/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
@@ -259,13 +257,13 @@ jobs:
             --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-sencod-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark_result_comet_sencod_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          name: benchmark_result_comet_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            comet-sencod-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            comet-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
 
   report-benchmark:
     name: Report benchmark result
