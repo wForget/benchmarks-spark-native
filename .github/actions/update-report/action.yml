@@ -1,0 +1,21 @@
+name: setup-spark
+description: 'Update benchmark report'
+inputs:
+  github-token:
+    description: 'GitHub token'
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: update benchmark report
+      if: ${{ hashFiles('*_allqueries.png', '*_queries_compare.png', '*_queries_speedup_*.png') != '' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        gh auth setup-git
+        git config --global user.email "643348094@qq.com"
+        git config --global user.name "Zhen Wang"
+        mkdir -p reports/
+        # TODO
