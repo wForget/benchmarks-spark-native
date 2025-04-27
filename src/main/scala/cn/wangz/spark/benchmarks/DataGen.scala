@@ -1,23 +1,27 @@
 package cn.wangz.spark.benchmarks
 
+import org.apache.spark.internal.Logging
 import org.apache.spark.sql.SparkSession
 import org.rogach.scallop.Subcommand
 
 import java.nio.file.{Files, Paths}
 
-class DataGen(context: BenchmarkContext, conf: DataGenConf) {
+class DataGen(context: BenchmarkContext, conf: DataGenConf) extends Logging {
 
   def run(): Unit = {
+    logInfo("Running data generation...")
     init()
 
     // generate data
     context.genDataSQLs.foreach { sql =>
+      logInfo(s"Running data generation sql: $sql")
       spark.sql(sql).collect()
     }
 
     if (conf.checkFileGen()) {
       genCheckFile()
     }
+    logInfo("Data generation finished.")
   }
 
   private def init(): Unit = {
