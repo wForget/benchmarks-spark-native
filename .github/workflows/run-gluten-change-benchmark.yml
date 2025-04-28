@@ -1,0 +1,341 @@
+name: Run benchmark
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        default: 'ubuntu-latest'
+        required: false
+        type: string
+      java-version:
+        default: '8'
+        required: false
+        type: string
+      spark-version:
+        default: '3.5.4'
+        required: false
+        type: string
+      spark-binary-version:
+        default: '3.5'
+        required: false
+        type: string
+      scala-version:
+        default: '2.12.17'
+        required: false
+        type: string
+      scala-binary-version:
+        default: '2.12'
+        required: false
+        type: string
+      benchmark:
+        description: 'Benchmark to run (tpcds or tpch)'
+        required: true
+        type: string
+      benchmark-scale:
+        description: 'Scale factor for benchmark, like: tiny, 1, 10, 100, 1000...'
+        required: true
+        type: string
+      gluten-repository-first:
+        default: 'apache/incubator-gluten'
+        description: 'The repository of first gluten to build'
+        required: false
+        type: string
+      gluten-ref-first:
+        default: 'main'
+        description: 'The commit id of first gluten to build'
+        required: false
+        type: string
+      gluten-repository-second:
+        default: 'apache/incubator-gluten'
+        description: 'The repository of first gluten to build'
+        required: false
+        type: string
+      gluten-ref-second:
+        description: 'The commit id of second gluten to build'
+        required: true
+        type: string
+
+permissions:
+  issues: write
+
+jobs:
+  run-benchmark-vanilla:
+    name: Run benchmark on vanilla spark
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Get date
+        id: get-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      - name: Get cached benchmark lib
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmarks-spark-native-*.jar
+          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
+          fail-on-cache-miss: 'true'
+      - name: Get cached benchmark data
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/warehouse/*
+            data/metastore/*
+          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          fail-on-cache-miss: 'true'
+      - name: Setup Spark
+        uses: ./.github/actions/setup-spark
+        with:
+          spark-version: ${{ inputs.spark-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+      - name: Run benchmark
+        run: |
+          WAREHOUSE_PATH=$(pwd)/data/warehouse
+          METASTORE_PATH=$(pwd)/data/metastore
+          BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
+          $SPARK_HOME/bin/spark-submit \
+            --master local\[4\] \
+            --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
+            --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
+            --conf spark.driver.memory=4g \
+            --class cn.wangz.spark.benchmarks.Main \
+            $BENCHMARK_JAR \
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+      - name: Upload benchmark result
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: |
+            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+
+  run-benchmark-gluten-first:
+    name: Run benchmark on spark with gluten (First)
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Get date
+        id: get-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      - name: Get cached benchmark lib
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmarks-spark-native-*.jar
+          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
+          fail-on-cache-miss: 'true'
+      - name: Get cached benchmark data
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/warehouse/*
+            data/metastore/*
+          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          fail-on-cache-miss: 'true'
+      - name: Setup Spark
+        uses: ./.github/actions/setup-spark
+        with:
+          spark-version: ${{ inputs.spark-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+      - name: Setup Rust & Java toolchain
+        uses: ./.github/actions/setup-builder
+        with:
+          rust-version: 'stable'
+          jdk-version: ${{ inputs.java-version }}
+      ## build first gluten and run benchmark
+      - name: Checkout Gluten
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.gluten-repository-first }}
+          path: incubator-gluten
+          ref: ${{ inputs.gluten-ref-first }}
+          fetch-depth: 1
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+      - name: Get cached gluten ccache
+        id: gluten-ccache-cache
+        uses: actions/cache@v4
+        with:
+          path: incubator-gluten/.ccache
+          key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
+          restore-keys: |
+            ccache-centos7-release-default
+      - name: Build Gluten
+        shell: bash
+        run: |
+          cd incubator-gluten
+          docker run -v $GITHUB_WORKSPACE/incubator-gluten:/work -w /work apache/gluten:vcpkg-centos-7 bash -c "
+            df -a
+            cd /work
+            export CCACHE_DIR=/work/.ccache
+            bash dev/ci-velox-buildstatic-centos-7.sh
+            ccache -s
+            mkdir -p /work/.m2/repository/org/apache/arrow/
+            cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
+          "
+          mkdir -p ~/.m2/repository/org/apache/arrow
+          cp -r $GITHUB_WORKSPACE/incubator-gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
+          mvn clean package -Pbackends-velox -Pceleborn -Puniffle -Pspark-${{ inputs.spark-binary-version }} -DskipTests
+      - name: Run benchmark (First)
+        run: |
+          cp incubator-gluten/package/target/gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
+          WAREHOUSE_PATH=$(pwd)/data/warehouse
+          METASTORE_PATH=$(pwd)/data/metastore
+          BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
+          $SPARK_HOME/bin/spark-submit \
+            --master local\[4\] \
+            --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
+            --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
+            --conf spark.driver.memory=4g \
+            --conf spark.plugins=org.apache.gluten.GlutenPlugin \
+            --conf spark.gluten.enabled=true \
+            --conf spark.shuffle.manager=org.apache.spark.shuffle.sort.ColumnarShuffleManager \
+            --conf spark.memory.offHeap.enabled=true \
+            --conf spark.memory.offHeap.size=8g \
+            --class cn.wangz.spark.benchmarks.Main \
+            $BENCHMARK_JAR \
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+      - name: Upload benchmark result
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark_result_gluten_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: |
+            gluten-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+
+  run-benchmark-gluten-second:
+    name: Run benchmark on spark with gluten (Second)
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Get date
+        id: get-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      - name: Get cached benchmark lib
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmarks-spark-native-*.jar
+          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
+          fail-on-cache-miss: 'true'
+      - name: Get cached benchmark data
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/warehouse/*
+            data/metastore/*
+          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          fail-on-cache-miss: 'true'
+      - name: Setup Spark
+        uses: ./.github/actions/setup-spark
+        with:
+          spark-version: ${{ inputs.spark-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+      - name: Setup Rust & Java toolchain
+        uses: ./.github/actions/setup-builder
+        with:
+          rust-version: 'stable'
+          jdk-version: ${{ inputs.java-version }}
+      # build second gluten and run benchmark
+      - name: Checkout Gluten
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.gluten-repository-second }}
+          path: incubator-gluten
+          ref: ${{ inputs.gluten-ref-second }}
+          fetch-depth: 1
+      - name: Get cached gluten ccache
+        id: gluten-ccache-cache
+        uses: actions/cache@v4
+        with:
+          path: incubator-gluten/.ccache
+          key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
+          restore-keys: |
+            ccache-centos7-release-default
+      - name: Build Gluten (Second)
+        shell: bash
+        run: |
+          cd incubator-gluten
+          docker run -v $GITHUB_WORKSPACE/incubator-gluten:/work -w /work apache/gluten:vcpkg-centos-7 bash -c "
+            df -a
+            cd /work
+            export CCACHE_DIR=/work/.ccache
+            bash dev/ci-velox-buildstatic-centos-7.sh
+            ccache -s
+            mkdir -p /work/.m2/repository/org/apache/arrow/
+            cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
+          "
+          mkdir -p ~/.m2/repository/org/apache/arrow
+          cp -r $GITHUB_WORKSPACE/incubator-gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
+          mvn clean package -Pbackends-velox -Pceleborn -Puniffle -Pspark-${{ inputs.spark-binary-version }} -DskipTests
+      - name: Run benchmark (Second)
+        run: |
+          cp incubator-gluten/package/target/gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
+          WAREHOUSE_PATH=$(pwd)/data/warehouse
+          METASTORE_PATH=$(pwd)/data/metastore
+          BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
+          $SPARK_HOME/bin/spark-submit \
+            --master local\[4\] \
+            --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
+            --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
+            --conf spark.driver.memory=4g \
+            --conf spark.plugins=org.apache.gluten.GlutenPlugin \
+            --conf spark.gluten.enabled=true \
+            --conf spark.shuffle.manager=org.apache.spark.shuffle.sort.ColumnarShuffleManager \
+            --conf spark.memory.offHeap.enabled=true \
+            --conf spark.memory.offHeap.size=8g \
+            --class cn.wangz.spark.benchmarks.Main \
+            $BENCHMARK_JAR \
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+      - name: Upload benchmark result
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark_result_gluten_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: |
+            gluten-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+
+  report-benchmark:
+    name: Report benchmark result
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [run-benchmark-vanilla, run-benchmark-gluten-first, run-benchmark-gluten-second]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download vanilla benchmark result
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+      - name: Download gluten benchmark result (first)
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark_result_gluten_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+      - name: Download gluten benchmark result (second)
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark_result_gluten_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+      - name: Generate comparison
+        run: |
+          ls -all
+          pip install -r requirements.txt
+          python scripts/generate-comparison.py \
+            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
+            --labels "Spark" "Gluten First" "Gluten Second" \
+            --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
+          ls -all
+      - name: Upload comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: comparison_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: |
+            *_allqueries.png
+            *_queries_compare.png
+            *_queries_speedup_*.png
