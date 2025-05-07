@@ -92,6 +92,7 @@ jobs:
             --master local\[4\] \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
+            --conf spark.driver.memory=4g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             data --check-file-gen --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }}
