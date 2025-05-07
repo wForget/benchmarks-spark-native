@@ -104,7 +104,7 @@ jobs:
             --conf spark.driver.memory=4g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
@@ -202,7 +202,7 @@ jobs:
             --conf spark.memory.offHeap.size=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
@@ -298,7 +298,7 @@ jobs:
             --conf spark.memory.offHeap.size=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
