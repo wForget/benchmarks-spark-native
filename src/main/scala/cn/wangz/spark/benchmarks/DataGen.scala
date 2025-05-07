@@ -43,8 +43,13 @@ class DataGen(context: BenchmarkContext, conf: DataGenConf) extends Logging {
       val df = spark.sql(query)
       val tempViewName = s"temp_view_${name.replace('.', '_')}"
       df.createTempView(tempViewName)
-      val checksumText = spark.sql(s"select sum(hash(*)) from $tempViewName").collect().head.get(0) + "\n"
-      saveChecksumFile(name, checksumText)
+      val rows = spark.sql(s"select sum(hash(*)) from $tempViewName").collect()
+      val checksum = if (rows.nonEmpty) {
+        rows.head.getLong(0)
+      } else {
+        0L
+      }
+      saveChecksumFile(name, String.valueOf(checksum))
     }
   }
 
