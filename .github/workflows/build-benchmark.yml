@@ -79,6 +79,7 @@ jobs:
           path: |
             data/warehouse/*
             data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
       - name: Generate data
         if: steps.get-benchmark-data-cache.outputs.cache-hit != 'true'
@@ -93,7 +94,7 @@ jobs:
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            data --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }}
+            data --check-file-gen --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }}
       - name: Cached benchmark data
         if: steps.get-benchmark-data-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -101,4 +102,5 @@ jobs:
           path: |
             data/warehouse/*
             data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}

@@ -57,7 +57,7 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) extends Loggi
     val checksum = if (rows.nonEmpty) {
       val schema = rows.head.schema
       val tempViewName = s"temp_view_${name.replace('.', '_')}"
-      spark.createDataFrame(rows.toList.asJava, schema).createTempView(tempViewName)
+      spark.createDataFrame(rows.toList.asJava, schema).createOrReplaceTempView(tempViewName)
       spark.sql(s"select sum(hash(*)) from $tempViewName").collect().head.getLong(0)
     } else {
       0

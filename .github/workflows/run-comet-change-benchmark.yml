@@ -84,6 +84,7 @@ jobs:
           path: |
             data/warehouse/*
             data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
@@ -103,7 +104,7 @@ jobs:
             --conf spark.driver.memory=4g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
@@ -136,6 +137,7 @@ jobs:
           path: |
             data/warehouse/*
             data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
@@ -180,7 +182,7 @@ jobs:
             --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
@@ -213,6 +215,7 @@ jobs:
           path: |
             data/warehouse/*
             data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
@@ -257,7 +260,7 @@ jobs:
             --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:

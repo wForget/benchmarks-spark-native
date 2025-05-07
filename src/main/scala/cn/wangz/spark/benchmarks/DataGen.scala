@@ -35,6 +35,10 @@ class DataGen(context: BenchmarkContext, conf: DataGenConf) extends Logging {
   }
 
   private def genCheckFile(): Unit = {
+    val dir = Paths.get(context.checkFilePath)
+    if (!Files.exists(dir)) {
+      Files.createDirectories(dir)
+    }
     context.querySQLs.foreach { case (name, query) =>
       val df = spark.sql(query)
       val tempViewName = s"temp_view_${name.replace('.', '_')}"

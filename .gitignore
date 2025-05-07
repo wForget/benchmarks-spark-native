@@ -39,3 +39,4 @@ spark-warehouse
 derby.log
 *.json
 dependency-reduced-pom.xml
+check_files_*/

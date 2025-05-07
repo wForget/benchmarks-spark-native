@@ -65,6 +65,7 @@ jobs:
           path: |
             data/warehouse/*
             data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
@@ -84,7 +85,7 @@ jobs:
             --conf spark.driver.memory=4g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
@@ -117,6 +118,7 @@ jobs:
           path: |
             data/warehouse/*
             data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           fail-on-cache-miss: 'true'
       - name: Get cached Datafusion Comet lib
@@ -149,7 +151,7 @@ jobs:
             --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
@@ -181,7 +183,7 @@ jobs:
 #        with:
 #          path: |
 #            data/warehouse/*
-#            data/metastore/*
+#            data/metastore/*check_files_${{ inputs.benchmark }}/*
 #          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
 #          fail-on-cache-miss: 'true'
 #      - name: Get cached blaze lib
@@ -212,7 +214,7 @@ jobs:
 #            --conf spark.memory.offHeap.enabled=false \
 #            --class cn.wangz.spark.benchmarks.Main \
 #            $BENCHMARK_JAR \
-#            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+#            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
 #      - name: Upload benchmark result
 #        uses: actions/upload-artifact@v4
 #        with:
@@ -245,6 +247,7 @@ jobs:
           path: |
             data/warehouse/*
             data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           fail-on-cache-miss: 'true'
       - name: Get cached gluten lib
@@ -276,7 +279,7 @@ jobs:
             --conf spark.memory.offHeap.size=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --check-result --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
