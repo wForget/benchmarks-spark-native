@@ -58,18 +58,18 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) extends Loggi
       val schema = rows.head.schema
       val tempViewName = s"temp_view_${name.replace('.', '_')}"
       spark.createDataFrame(rows.toList.asJava, schema).createOrReplaceTempView(tempViewName)
-      spark.sql(s"select sum(hash(*)) from $tempViewName").collect().head.getLong(0)
+      spark.sql(s"select sum(hash(*)) from $tempViewName").collect().head.get(0) + ""
     } else {
-      0
+      "null"
     }
 
     assert(checksum == readChecksum(name), s"Checksum mismatch for $name")
   }
 
-  private def readChecksum(name: String): Long = {
+  private def readChecksum(name: String): String = {
     val fileName = context.checksumFileName(name)
     val path = Paths.get(context.checkFilePath, fileName)
-    Files.readAllLines(path).asScala.head.toLong
+    Files.readAllLines(path).asScala.head
   }
 
   private def saveResultJsonFile(fileName: String, content: String): Unit = {
