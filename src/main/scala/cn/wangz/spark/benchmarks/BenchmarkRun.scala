@@ -62,8 +62,8 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) extends Loggi
     } else {
       "null"
     }
-
-    assert(checksum == readChecksum(name), s"Checksum mismatch for $name")
+    val expectedChecksum = readChecksum(name)
+    assert(checksum == readChecksum(name), s"Checksum mismatch for $name, expected: $expectedChecksum, got: $checksum")
   }
 
   private def readChecksum(name: String): String = {
