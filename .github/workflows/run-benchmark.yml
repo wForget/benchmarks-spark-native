@@ -159,68 +159,68 @@ jobs:
           path: |
             comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
 
-#  run-benchmark-blaze:
-#    name: Run benchmark on spark with blaze
-#    runs-on: ${{ inputs.os }}
-#    steps:
-#      - uses: actions/checkout@v4
-#      - name: Setup Java
-#        uses: actions/setup-java@v4
-#        with:
-#          distribution: temurin
-#          java-version: ${{ inputs.java-version }}
-#      - name: Get date
-#        id: get-date
-#        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-#      - name: Get cached benchmark lib
-#        uses: actions/cache/restore@v4
-#        with:
-#          path: benchmarks-spark-native-*.jar
-#          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-#          fail-on-cache-miss: 'true'
-#      - name: Get cached benchmark data
-#        uses: actions/cache/restore@v4
-#        with:
-#          path: |
-#            data/warehouse/*
-#            data/metastore/*check_files_${{ inputs.benchmark }}/*
-#          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-#          fail-on-cache-miss: 'true'
-#      - name: Get cached blaze lib
-#        uses: actions/cache/restore@v4
-#        with:
-#          path: blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
-#          key: blaze-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
-#          fail-on-cache-miss: 'true'
-#      - name: Setup Spark
-#        uses: ./.github/actions/setup-spark
-#        with:
-#          spark-version: ${{ inputs.spark-version }}
-#          scala-binary-version: ${{ inputs.scala-binary-version }}
-#      - name: Run benchmark
-#        run: |
-#          cp blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar $SPARK_HOME/jars
-#          WAREHOUSE_PATH=$(pwd)/data/warehouse
-#          METASTORE_PATH=$(pwd)/data/metastore
-#          BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
-#          $SPARK_HOME/bin/spark-submit \
-#            --master local\[4\] \
-#            --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
-#            --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
-#            --conf spark.driver.memory=2g \
-#            --conf spark.sql.extensions=org.apache.spark.sql.blaze.BlazeSparkSessionExtension \
-#            --conf spark.blaze.enable=true \
-#            --conf spark.shuffle.manager=org.apache.spark.sql.execution.blaze.shuffle.BlazeShuffleManager \
-#            --conf spark.memory.offHeap.enabled=false \
-#            --class cn.wangz.spark.benchmarks.Main \
-#            $BENCHMARK_JAR \
-#            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
-#      - name: Upload benchmark result
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: benchmark_result_blaze_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-#          path: |
-#            blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+  run-benchmark-blaze:
+    name: Run benchmark on spark with blaze
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Get date
+        id: get-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      - name: Get cached benchmark lib
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmarks-spark-native-*.jar
+          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
+          fail-on-cache-miss: 'true'
+      - name: Get cached benchmark data
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/warehouse/*
+            data/metastore/*check_files_${{ inputs.benchmark }}/*
+          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          fail-on-cache-miss: 'true'
+      - name: Get cached blaze lib
+        uses: actions/cache/restore@v4
+        with:
+          path: blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          key: blaze-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          fail-on-cache-miss: 'true'
+      - name: Setup Spark
+        uses: ./.github/actions/setup-spark
+        with:
+          spark-version: ${{ inputs.spark-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+      - name: Run benchmark
+        run: |
+          cp blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar $SPARK_HOME/jars
+          WAREHOUSE_PATH=$(pwd)/data/warehouse
+          METASTORE_PATH=$(pwd)/data/metastore
+          BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
+          $SPARK_HOME/bin/spark-submit \
+            --master local\[4\] \
+            --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
+            --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
+            --conf spark.driver.memory=2g \
+            --conf spark.sql.extensions=org.apache.spark.sql.blaze.BlazeSparkSessionExtension \
+            --conf spark.blaze.enable=true \
+            --conf spark.shuffle.manager=org.apache.spark.sql.execution.blaze.shuffle.BlazeShuffleManager \
+            --conf spark.memory.offHeap.enabled=false \
+            --class cn.wangz.spark.benchmarks.Main \
+            $BENCHMARK_JAR \
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+      - name: Upload benchmark result
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark_result_blaze_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: |
+            blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
 
   run-benchmark-gluten:
     name: Run benchmark on spark with gluten
