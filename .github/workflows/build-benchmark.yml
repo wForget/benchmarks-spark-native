@@ -95,7 +95,7 @@ jobs:
             --conf spark.driver.memory=4g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            data --check-file-gen --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }}
+            data --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }}
       - name: Cached benchmark data
         if: steps.get-benchmark-data-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
