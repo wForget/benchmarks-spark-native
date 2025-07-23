@@ -183,7 +183,8 @@ jobs:
         with:
           path: |
             data/warehouse/*
-            data/metastore/*check_files_${{ inputs.benchmark }}/*
+            data/metastore/*
+            check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           fail-on-cache-miss: 'true'
       - name: Get cached blaze lib
