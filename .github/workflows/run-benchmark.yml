@@ -272,6 +272,7 @@ jobs:
             --master local\[4\] \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
+            --conf spark.driver.extraJavaOptions="--add-modules=jdk.incubator.vector -Dio.netty.tryReflectionSetAccessible=true --enable-native-access=ALL-UNNAMED" \
             --conf spark.driver.memory=4g \
             --conf spark.plugins=org.apache.gluten.GlutenPlugin \
             --conf spark.gluten.enabled=true \
