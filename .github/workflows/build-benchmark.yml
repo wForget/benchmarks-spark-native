@@ -84,6 +84,7 @@ jobs:
       - name: Generate data
         if: steps.get-benchmark-data-cache.outputs.cache-hit != 'true'
         run: |
+          rm -rf data
           mkdir data
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
