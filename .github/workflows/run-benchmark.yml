@@ -300,6 +300,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+      - name: Download blaze benchmark result
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark_result_blaze_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
       - name: Download comet benchmark result
         uses: actions/download-artifact@v4
         with:
@@ -313,8 +317,8 @@ jobs:
           ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
-            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
-            --labels "Spark" "Comet" "Gluten" \
+            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
+            --labels "Spark" "Blaze" "Comet" "Gluten" \
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
           ls -all
       - name: Upload comparison
