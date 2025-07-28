@@ -82,7 +82,7 @@ jobs:
             --master local\[4\] \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
-            --conf spark.driver.memory=4g \
+            --conf spark.driver.memory=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
