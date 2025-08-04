@@ -211,6 +211,7 @@ jobs:
             --conf spark.driver.memory=4g \
             --conf spark.sql.extensions=org.apache.spark.sql.blaze.BlazeSparkSessionExtension \
             --conf spark.blaze.enable=true \
+            --conf spark.blaze.native.log.level=warn \
             --conf spark.shuffle.manager=org.apache.spark.sql.execution.blaze.shuffle.BlazeShuffleManager \
             --conf spark.memory.offHeap.enabled=false \
             --class cn.wangz.spark.benchmarks.Main \
