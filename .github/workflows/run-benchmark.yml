@@ -209,6 +209,7 @@ jobs:
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
+            --conf spark.log.level=error \
             --conf spark.sql.extensions=org.apache.spark.sql.blaze.BlazeSparkSessionExtension \
             --conf spark.blaze.enable=true \
             --conf spark.blaze.native.log.level=warn \
