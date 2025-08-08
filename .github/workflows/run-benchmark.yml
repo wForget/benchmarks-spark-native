@@ -212,7 +212,7 @@ jobs:
             --conf spark.driver.memoryOverhead=8g \
             --conf spark.executor.memory=4g \
             --conf spark.executor.memoryOverhead=8g \
-            --conf spark.log.level=error \
+            --conf spark.log.level=warn \
             --conf spark.sql.extensions=org.apache.spark.sql.blaze.BlazeSparkSessionExtension \
             --conf spark.blaze.enable=true \
             --conf spark.blaze.native.log.level=warn \
