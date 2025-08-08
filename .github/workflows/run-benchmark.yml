@@ -218,6 +218,7 @@ jobs:
             --conf spark.blaze.native.log.level=warn \
             --conf spark.shuffle.manager=org.apache.spark.sql.execution.blaze.shuffle.BlazeShuffleManager \
             --conf spark.memory.offHeap.enabled=false \
+            --conf spark.blaze.decimal.arithOp.enabled=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
