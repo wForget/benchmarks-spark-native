@@ -74,50 +74,50 @@ jobs:
           path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
           key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
 
-  build-blaze:
-    name: Build blaze
+  build-auron:
+    name: Build auron
     runs-on: ${{ inputs.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Get date
         id: get-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-      - name: Get cached Blaze lib
-        id: get-blaze-spark-cache
+      - name: Get cached Auron lib
+        id: get-auron-spark-cache
         uses: actions/cache/restore@v4
         with:
-          path: blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
-          key: blaze-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
-      - name: Checkout Blaze
-        if: steps.get-blaze-spark-cache.outputs.cache-hit != 'true'
+          path: auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+      - name: Checkout Auron
+        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
-          repository: kwai/blaze
-          path: blaze
+          repository: apache/auron
+          path: auron
           ref: master
           fetch-depth: 1
       - name: Setup Rust & Java toolchain
-        if: steps.get-blaze-spark-cache.outputs.cache-hit != 'true'
+        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/setup-builder
         with:
           rust-version: 'stable'
           jdk-version: ${{ inputs.java-version }}
       - name: Setup Maven
-        if: steps.get-blaze-spark-cache.outputs.cache-hit != 'true'
+        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/setup-maven
-      - name: Build Blaze
-        if: steps.get-blaze-spark-cache.outputs.cache-hit != 'true'
+      - name: Build Auron
+        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          cd blaze
-          mvn clean package -Pspark-${{ inputs.spark-binary-version }} -Prelease
-          cp target/blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar ..
-      - name: Cached Blaze lib
-        if: steps.get-blaze-spark-cache.outputs.cache-hit != 'true'
+          cd auron
+          mvn clean package -Pspark-${{ inputs.spark-binary-version }} -Pscala-2.12 -Prelease
+          cp target/auron-engine-spark-${{inputs.spark-binary-version}}-*.jar ..
+      - name: Cached Auron lib
+        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
-          key: blaze-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          path: auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
 
   build-gluten:
     name: Build gluten
@@ -186,7 +186,7 @@ jobs:
   upload-all-engine:
     name: Upload all engine jars
     runs-on: ubuntu-latest
-    needs: [build-comet, build-blaze, build-gluten]
+    needs: [build-comet, build-auron, build-gluten]
     steps:
       - name: Get date
         id: get-date
@@ -197,11 +197,11 @@ jobs:
           path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
           key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
           fail-on-cache-miss: 'true'
-      - name: Get cached Blaze lib
+      - name: Get cached Auron lib
         uses: actions/cache/restore@v4
         with:
-          path: blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
-          key: blaze-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          path: auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
           fail-on-cache-miss: 'true'
       - name: Get cached gluten lib
         uses: actions/cache/restore@v4
@@ -216,4 +216,4 @@ jobs:
           path: |
             comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
             gluten-velox-bundle-spark*.jar
-            blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
+            auron-engine-spark-${{inputs.spark-binary-version}}-*.jar

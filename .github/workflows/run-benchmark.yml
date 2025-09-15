@@ -159,8 +159,8 @@ jobs:
           path: |
             comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
 
-  run-benchmark-blaze:
-    name: Run benchmark on spark with blaze
+  run-benchmark-auron:
+    name: Run benchmark on spark with auron
     runs-on: ${{ inputs.os }}
     steps:
       - uses: actions/checkout@v4
@@ -187,11 +187,11 @@ jobs:
             check_files_${{ inputs.benchmark }}/*
           key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           fail-on-cache-miss: 'true'
-      - name: Get cached blaze lib
+      - name: Get cached auron lib
         uses: actions/cache/restore@v4
         with:
-          path: blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar
-          key: blaze-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          path: auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
         uses: ./.github/actions/setup-spark
@@ -200,7 +200,7 @@ jobs:
           scala-binary-version: ${{ inputs.scala-binary-version }}
       - name: Run benchmark
         run: |
-          cp blaze-engine-spark-${{inputs.spark-binary-version}}-*.jar $SPARK_HOME/jars
+          cp auron-engine-spark-${{inputs.spark-binary-version}}-*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -213,21 +213,21 @@ jobs:
             --conf spark.executor.memory=4g \
             --conf spark.executor.memoryOverhead=8g \
             --conf spark.log.level=warn \
-            --conf spark.sql.extensions=org.apache.spark.sql.blaze.BlazeSparkSessionExtension \
-            --conf spark.blaze.enable=true \
-            --conf spark.blaze.native.log.level=warn \
-            --conf spark.shuffle.manager=org.apache.spark.sql.execution.blaze.shuffle.BlazeShuffleManager \
+            --conf spark.sql.extensions=org.apache.spark.sql.auron.AuronSparkSessionExtension \
+            --conf spark.auron.enable=true \
+            --conf spark.auron.native.log.level=warn \
+            --conf spark.shuffle.manager=org.apache.spark.sql.execution.auron.shuffle.AuronShuffleManager \
             --conf spark.memory.offHeap.enabled=false \
-            --conf spark.blaze.decimal.arithOp.enabled=true \
+            --conf spark.auron.decimal.arithOp.enabled=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=auron-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark_result_blaze_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          name: benchmark_result_auron_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            auron-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
 
   run-benchmark-gluten:
     name: Run benchmark on spark with gluten
@@ -306,10 +306,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-      - name: Download blaze benchmark result
+      - name: Download auron benchmark result
         uses: actions/download-artifact@v4
         with:
-          name: benchmark_result_blaze_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          name: benchmark_result_auron_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
       - name: Download comet benchmark result
         uses: actions/download-artifact@v4
         with:
@@ -323,8 +323,8 @@ jobs:
           ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
-            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json blaze-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
-            --labels "Spark" "Blaze" "Comet" "Gluten" \
+            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json auron-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
+            --labels "Spark" "Auron" "Comet" "Gluten" \
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
           ls -all
       - name: Upload comparison
