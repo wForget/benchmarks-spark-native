@@ -190,7 +190,7 @@ jobs:
       - name: Get cached auron lib
         uses: actions/cache/restore@v4
         with:
-          path: auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          path: auron-spark-${{inputs.spark-binary-version}}-*.jar
           key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
@@ -200,7 +200,7 @@ jobs:
           scala-binary-version: ${{ inputs.scala-binary-version }}
       - name: Run benchmark
         run: |
-          cp auron-engine-spark-${{inputs.spark-binary-version}}-*.jar $SPARK_HOME/jars
+          cp auron-spark-${{inputs.spark-binary-version}}-*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)

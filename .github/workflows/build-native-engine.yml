@@ -86,7 +86,7 @@ jobs:
         id: get-auron-spark-cache
         uses: actions/cache/restore@v4
         with:
-          path: auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          path: auron-spark-${{inputs.spark-binary-version}}-*.jar
           key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
       - name: Checkout Auron
         if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
@@ -111,12 +111,12 @@ jobs:
         run: |
           cd auron
           mvn clean package -Pspark-${{ inputs.spark-binary-version }} -Pscala-2.12 -Prelease
-          cp target/auron-engine-spark-${{inputs.spark-binary-version}}-*.jar ..
+          cp target/auron-spark-${{inputs.spark-binary-version}}-*.jar ..
       - name: Cached Auron lib
         if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          path: auron-spark-${{inputs.spark-binary-version}}-*.jar
           key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
 
   build-gluten:
@@ -200,7 +200,7 @@ jobs:
       - name: Get cached Auron lib
         uses: actions/cache/restore@v4
         with:
-          path: auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+          path: auron-spark-${{inputs.spark-binary-version}}-*.jar
           key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
           fail-on-cache-miss: 'true'
       - name: Get cached gluten lib
@@ -216,4 +216,4 @@ jobs:
           path: |
             comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
             gluten-velox-bundle-spark*.jar
-            auron-engine-spark-${{inputs.spark-binary-version}}-*.jar
+            auron-spark-${{inputs.spark-binary-version}}-*.jar
