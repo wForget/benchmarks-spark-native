@@ -14,7 +14,7 @@ on:
         required: true
         type: string
       gluten-repository-first:
-        default: 'apache/incubator-gluten'
+        default: 'apache/gluten'
         description: 'The repository of first gluten to build'
         required: false
         type: string
@@ -24,7 +24,7 @@ on:
         required: false
         type: string
       gluten-repository-second:
-        default: 'apache/incubator-gluten'
+        default: 'apache/gluten'
         description: 'The repository of first gluten to build'
         required: false
         type: string

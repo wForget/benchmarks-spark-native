@@ -137,7 +137,7 @@ jobs:
         if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
-          repository: apache/incubator-gluten
+          repository: apache/gluten
           path: incubator-gluten
           ref: main
           fetch-depth: 1
@@ -163,7 +163,7 @@ jobs:
         shell: bash
         run: |
           cd incubator-gluten
-          docker run -v $GITHUB_WORKSPACE/incubator-gluten:/work -w /work apache/gluten:vcpkg-centos-7 bash -c "
+          docker run -v $GITHUB_WORKSPACE/incubator-gluten:/work -w /work apache/gluten:vcpkg-centos-7-gcc13 bash -c "
             df -a
             cd /work
             export CCACHE_DIR=/work/.ccache
@@ -174,7 +174,11 @@ jobs:
           "
           mkdir -p ~/.m2/repository/org/apache/arrow
           cp -r $GITHUB_WORKSPACE/incubator-gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
-          mvn clean package -Pbackends-velox -Pceleborn -Puniffle -Pspark-${{ inputs.spark-binary-version }} -DskipTests
+          GLUTEN_PROFILES="-Pspark-${{ inputs.spark-binary-version }} -Pbackends-velox -Pceleborn -Puniffle"
+          if [ "${{ inputs.java-version }}" != "8" ]; then
+            GLUTEN_PROFILES="$GLUTEN_PROFILES -Pjava-${{ inputs.java-version }}"
+          fi
+          ./build/mvn clean install $GLUTEN_PROFILES -DskipTests -Dmaven.source.skip
           cp package/target/gluten-velox-bundle-spark*.jar ..
       - name: Cached Gluten lib
         if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
