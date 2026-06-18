@@ -110,7 +110,12 @@ jobs:
         shell: bash
         run: |
           cd auron
-          mvn clean -DskipTests package -Pspark-${{ inputs.spark-binary-version }} -Pscala-2.12 -Prelease
+          ./auron-build.sh \
+            --release \
+            --sparkver ${{ inputs.spark-binary-version }} \
+            --scalaver ${{ inputs.scala-binary-version }} \
+            --clean true \
+            --skiptests true
           cp target/auron-spark-${{inputs.spark-binary-version}}*.jar ..
       - name: Cached Auron lib
         if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
