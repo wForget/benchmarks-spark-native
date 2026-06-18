@@ -299,25 +299,29 @@ jobs:
     name: Report benchmark result
     runs-on: ubuntu-latest
     if: always()
-    needs: [run-benchmark-vanilla, run-benchmark-comet, run-benchmark-gluten]
+    needs: [run-benchmark-vanilla, run-benchmark-auron, run-benchmark-comet, run-benchmark-gluten]
     steps:
       - uses: actions/checkout@v5
       - name: Download vanilla benchmark result
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: benchmark-results/vanilla
       - name: Download auron benchmark result
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_auron_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: benchmark-results/auron
       - name: Download comet benchmark result
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_comet_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: benchmark-results/comet
       - name: Download gluten benchmark result
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_gluten_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: benchmark-results/gluten
       - name: Generate comparison
         run: |
           ls -all

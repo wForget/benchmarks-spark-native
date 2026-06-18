@@ -281,14 +281,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: benchmark-results/vanilla
       - name: Download comet benchmark result (first)
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_comet_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: benchmark-results/comet-first
       - name: Download comet benchmark result (second)
         uses: actions/download-artifact@v4
         with:
           name: benchmark_result_comet_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: benchmark-results/comet-second
       - name: Generate comparison
         run: |
           ls -all
