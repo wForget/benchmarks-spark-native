@@ -1,4 +1,4 @@
-name: Run benchmark
+name: Run gluten change benchmark
 
 on:
   workflow_call:

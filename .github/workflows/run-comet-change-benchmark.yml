@@ -1,4 +1,4 @@
-name: Run benchmark
+name: Run comet change benchmark
 
 on:
   workflow_call:
