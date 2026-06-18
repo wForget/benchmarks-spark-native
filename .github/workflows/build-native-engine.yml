@@ -143,7 +143,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: apache/gluten
-          path: incubator-gluten
+          path: gluten
           ref: main
           fetch-depth: 1
       - name: Setup Rust & Java toolchain
@@ -159,7 +159,7 @@ jobs:
         id: gluten-ccache-cache
         uses: actions/cache@v5
         with:
-          path: incubator-gluten/.ccache
+          path: gluten/.ccache
           key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
           restore-keys: |
             ccache-centos7-release-default
@@ -167,8 +167,8 @@ jobs:
         if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          cd incubator-gluten
-          docker run -v $GITHUB_WORKSPACE/incubator-gluten:/work -w /work apache/gluten:vcpkg-centos-7-gcc13 bash -c "
+          cd gluten
+          docker run -v $GITHUB_WORKSPACE/gluten:/work -w /work apache/gluten:vcpkg-centos-7-gcc13 bash -c "
             df -a
             cd /work
             export CCACHE_DIR=/work/.ccache
@@ -178,7 +178,7 @@ jobs:
             cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
           "
           mkdir -p ~/.m2/repository/org/apache/arrow
-          cp -r $GITHUB_WORKSPACE/incubator-gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
+          cp -r $GITHUB_WORKSPACE/gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
           GLUTEN_PROFILES="-Pspark-${{ inputs.spark-binary-version }} -Pbackends-velox -Pceleborn -Puniffle"
           if [ "${{ inputs.java-version }}" != "8" ]; then
             GLUTEN_PROFILES="$GLUTEN_PROFILES -Pjava-${{ inputs.java-version }}"
