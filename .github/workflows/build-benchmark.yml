@@ -44,7 +44,7 @@ jobs:
     name: Build benchmark and generate data
     runs-on: ${{ inputs.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -52,7 +52,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
       - name: Get cached benchmark lib
         id: get-benchmark-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: benchmarks-spark-native-*.jar
           key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
@@ -63,7 +63,7 @@ jobs:
           cp target/benchmarks-spark-native-*.jar .
       - name: Cached benchmark lib
         if: steps.get-benchmark-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: benchmarks-spark-native-*.jar
           key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
@@ -74,7 +74,7 @@ jobs:
           scala-binary-version: ${{ inputs.scala-binary-version }}
       - name: Get cached benchmark data
         id: get-benchmark-data-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             data/warehouse/*
@@ -99,7 +99,7 @@ jobs:
             data --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }}
       - name: Cached benchmark data
         if: steps.get-benchmark-data-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             data/warehouse/*

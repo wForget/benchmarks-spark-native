@@ -36,19 +36,19 @@ jobs:
     name: Build comet
     runs-on: ${{ inputs.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Get date
         id: get-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached Datafusion Comet lib
         id: get-comet-spark-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
           key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
       - name: Checkout Datafusion Comet
         if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: apache/datafusion-comet
           path: datafusion-comet
@@ -69,7 +69,7 @@ jobs:
           cp spark/target/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar ..
       - name: Cached Datafusion Comet lib
         if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
           key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
@@ -78,19 +78,19 @@ jobs:
     name: Build auron
     runs-on: ${{ inputs.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Get date
         id: get-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached Auron lib
         id: get-auron-spark-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: auron-spark-${{inputs.spark-binary-version}}*.jar
           key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
       - name: Checkout Auron
         if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: apache/auron
           path: auron
@@ -119,7 +119,7 @@ jobs:
           cp target/auron-spark-${{inputs.spark-binary-version}}*.jar ..
       - name: Cached Auron lib
         if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: auron-spark-${{inputs.spark-binary-version}}*.jar
           key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
@@ -128,19 +128,19 @@ jobs:
     name: Build gluten
     runs-on: ${{ inputs.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Get date
         id: get-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached gluten lib
         id: get-gluten-spark-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: gluten-velox-bundle-spark*.jar
           key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
       - name: Checkout Gluten
         if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: apache/gluten
           path: incubator-gluten
@@ -157,7 +157,7 @@ jobs:
       - name: Get cached gluten ccache
         if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
         id: gluten-ccache-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: incubator-gluten/.ccache
           key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
@@ -187,7 +187,7 @@ jobs:
           cp package/target/gluten-velox-bundle-spark*.jar ..
       - name: Cached Gluten lib
         if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: gluten-velox-bundle-spark*.jar
           key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
@@ -201,19 +201,19 @@ jobs:
         id: get-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached Datafusion Comet lib
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
           key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
           fail-on-cache-miss: 'true'
       - name: Get cached Auron lib
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: auron-spark-${{inputs.spark-binary-version}}*.jar
           key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
           fail-on-cache-miss: 'true'
       - name: Get cached gluten lib
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: gluten-velox-bundle-spark*.jar
           key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}

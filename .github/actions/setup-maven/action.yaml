@@ -10,7 +10,7 @@ runs:
   steps:
     - name: Get cached Maven
       id: get-maven-cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: apache-maven-*
         key: setup-maven-${{ inputs.maven-version }}
@@ -32,7 +32,7 @@ runs:
     - name: Cached Maven
       if: steps.get-maven-cache.outputs.cache-hit != 'true'
       id: maven-cache
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: apache-maven-*
         key: setup-maven-${{ inputs.maven-version }}

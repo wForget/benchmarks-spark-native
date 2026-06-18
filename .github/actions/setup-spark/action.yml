@@ -14,7 +14,7 @@ runs:
   steps:
     - name: Get cached Spark
       id: get-spark-cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: /opt/spark-${{ inputs.spark-version }}-bin-*
         key: setup-spark-${{ inputs.spark-version }}
@@ -34,7 +34,7 @@ runs:
     - name: Cached Spark
       if: steps.get-spark-cache.outputs.cache-hit != 'true'
       id: spark-cache
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: /opt/spark-${{ inputs.spark-version }}-bin-*
         key: setup-spark-${{ inputs.spark-version }}

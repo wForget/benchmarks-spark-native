@@ -63,7 +63,7 @@ jobs:
     name: Run benchmark on vanilla spark
     runs-on: ${{ inputs.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -73,13 +73,13 @@ jobs:
         id: get-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: benchmarks-spark-native-*.jar
           key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
           fail-on-cache-miss: 'true'
       - name: Get cached benchmark data
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             data/warehouse/*
@@ -116,7 +116,7 @@ jobs:
     name: Run benchmark on spark with gluten (First)
     runs-on: ${{ inputs.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -126,13 +126,13 @@ jobs:
         id: get-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: benchmarks-spark-native-*.jar
           key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
           fail-on-cache-miss: 'true'
       - name: Get cached benchmark data
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             data/warehouse/*
@@ -152,7 +152,7 @@ jobs:
           jdk-version: ${{ inputs.java-version }}
       ## build first gluten and run benchmark
       - name: Checkout Gluten
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ inputs.gluten-repository-first }}
           path: incubator-gluten
@@ -162,7 +162,7 @@ jobs:
         uses: ./.github/actions/setup-maven
       - name: Get cached gluten ccache
         id: gluten-ccache-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: incubator-gluten/.ccache
           key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
@@ -218,7 +218,7 @@ jobs:
     name: Run benchmark on spark with gluten (Second)
     runs-on: ${{ inputs.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -228,13 +228,13 @@ jobs:
         id: get-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: benchmarks-spark-native-*.jar
           key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
           fail-on-cache-miss: 'true'
       - name: Get cached benchmark data
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             data/warehouse/*
@@ -254,7 +254,7 @@ jobs:
           jdk-version: ${{ inputs.java-version }}
       # build second gluten and run benchmark
       - name: Checkout Gluten
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ inputs.gluten-repository-second }}
           path: incubator-gluten
@@ -262,7 +262,7 @@ jobs:
           fetch-depth: 1
       - name: Get cached gluten ccache
         id: gluten-ccache-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: incubator-gluten/.ccache
           key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
@@ -320,7 +320,7 @@ jobs:
     if: always()
     needs: [run-benchmark-vanilla, run-benchmark-gluten-first, run-benchmark-gluten-second]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download vanilla benchmark result
         uses: actions/download-artifact@v4
         with:
