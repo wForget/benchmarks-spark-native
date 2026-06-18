@@ -85,13 +85,13 @@ jobs:
             --conf spark.driver.memory=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   run-benchmark-comet:
     name: Run benchmark on spark with comet
@@ -151,13 +151,13 @@ jobs:
             --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_comet_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/comet/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   run-benchmark-auron:
     name: Run benchmark on spark with auron
@@ -221,13 +221,13 @@ jobs:
             --conf spark.auron.decimal.arithOp.enabled=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=auron-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/auron
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_auron_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            auron-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/auron/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   run-benchmark-gluten:
     name: Run benchmark on spark with gluten
@@ -287,13 +287,13 @@ jobs:
             --conf spark.memory.offHeap.size=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/gluten
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_gluten_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/gluten/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   report-benchmark:
     name: Report benchmark result
@@ -323,7 +323,7 @@ jobs:
           ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
-            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json auron-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json comet-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
+            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/auron/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/comet/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/gluten/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json \
             --labels "Spark" "Auron" "Comet" "Gluten" \
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
           ls -all

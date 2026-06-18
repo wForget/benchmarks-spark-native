@@ -104,13 +104,13 @@ jobs:
             --conf spark.driver.memory=4g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   run-benchmark-comet-first:
     name: Run benchmark on spark with comet (First)
@@ -182,13 +182,13 @@ jobs:
             --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet-first
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_comet_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            comet-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/comet-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   run-benchmark-comet-second:
     name: Run benchmark on spark with comet (Second)
@@ -260,13 +260,13 @@ jobs:
             --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=comet-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet-second
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_comet_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            comet-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/comet-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   report-benchmark:
     name: Report benchmark result
@@ -292,7 +292,7 @@ jobs:
           ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
-            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json comet-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json comet-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
+            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/comet-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/comet-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json \
             --labels "Spark" "Comet First" "Comet Second" \
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
           ls -all

@@ -1,10 +1,12 @@
 package cn.wangz.spark.benchmarks
 
 import cn.wangz.spark.benchmarks.benchmark.Benchmark
+import org.apache.hadoop.fs.Path
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.{Row, SparkSession}
 import org.rogach.scallop.Subcommand
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
@@ -44,8 +46,8 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) extends Loggi
       (name, time)
     }.toMap
 
-    val outputFileName = conf.output.getOrElse(s"${context.benchmarkType}_${conf.scale()}.json")
-    saveResultJsonFile(outputFileName, Utils.MAPPER.writeValueAsString(resultMap))
+    val outputDir = conf.output.getOrElse(".")
+    saveResultJsonFile(outputDir, Utils.MAPPER.writeValueAsString(resultMap))
   }
 
   private def init(): Unit = {
@@ -72,10 +74,20 @@ class BenchmarkRun(context: BenchmarkContext, conf: BenchmarkConf) extends Loggi
     Files.readAllLines(path).asScala.head
   }
 
-  private def saveResultJsonFile(fileName: String, content: String): Unit = {
-    val path = Paths.get(fileName)
-    Files.write(path, content.getBytes)
+  private def saveResultJsonFile(outputDir: String, content: String): Unit = {
+    val path = new Path(outputDir, resultFileName)
+    val fileSystem = path.getFileSystem(spark.sparkContext.hadoopConfiguration)
+    Option(path.getParent).foreach(fileSystem.mkdirs)
+
+    val outputStream = fileSystem.create(path, true)
+    try {
+      outputStream.write(content.getBytes(StandardCharsets.UTF_8))
+    } finally {
+      outputStream.close()
+    }
   }
+
+  private def resultFileName: String = s"${conf.`type`()}_${conf.scale()}.json"
 
   private def spark: SparkSession = context.spark
 }
@@ -84,7 +96,7 @@ class BenchmarkConf extends Subcommand("benchmark") {
   val `type` = opt[String](required = true, descr = "Benchmark type: tpcds, tpch")
   val scale = opt[String](required = true, descr = "Scale factor: tiny, 1, 10, 100...")
   val name = opt[String](required = false, descr = "The spark benchmark runner name of spark job")
-  val output = opt[String](required = false, descr = "The output file name of benchmark result")
+  val output = opt[String](required = false, descr = "The output directory of benchmark result, resolved by Hadoop FileSystem")
   val database = opt[String](required = false, default = Some("default"), descr = "Database name of generated data, default is 'default'")
   val checkResult = opt[Boolean](required = false, default = Some(false), descr = "If check result (hash sum), default is false")
   val minNumIters = opt[Int](required = false, default = Some(3), descr = "Minimum number of iterations to run, default is 3")

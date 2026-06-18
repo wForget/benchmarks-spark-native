@@ -50,7 +50,7 @@ Subcommand: benchmark
   -c, --check-result           If check result (hash sum), default is false
   -d, --database  <arg>        Database name of generated data, default is 'default'
   -m, --min-num-iters  <arg>   Minimum number of iterations to run, default is 3
-  -o, --output  <arg>          The output file name of benchmark result
+  -o, --output  <arg>          The output directory of benchmark result, resolved by Hadoop FileSystem
   -s, --scale  <arg>           Scale factor: tiny, 1, 10, 100...
   -t, --type  <arg>            Benchmark type: tpcds, tpch
   -h, --help                   Show help message
@@ -69,7 +69,7 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.driver.memory=4g \
   --class cn.wangz.spark.benchmarks.Main \
   benchmarks-spark-native-1.0-SNAPSHOT.jar \
-  benchmark --type=tpcds --scale=1 --output=vanilla-tpcds-1.json
+  benchmark --type=tpcds --scale=1 --output=benchmark-results/vanilla
 
 # Run spark benchmark with comet
 cp comet-spark-spark${{ spark-binary-version }}_${{ scala-binary-version }}-*.jar $SPARK_HOME/jars
@@ -88,7 +88,23 @@ $SPARK_HOME/bin/spark-submit \
   --conf spark.comet.columnar.shuffle.unifiedMemoryAllocatorTest=true \
   --class cn.wangz.spark.benchmarks.Main \
   benchmarks-spark-native-1.0-SNAPSHOT.jar \
-  benchmark --type=tpcds --scale=1 --output=comet-tpcds-1.json
+  benchmark --type=tpcds --scale=1 --output=benchmark-results/comet
+```
+
+The `--output` path is resolved by Hadoop FileSystem and is treated as a directory. The result file name is generated automatically as `<benchmark>_<scale>.json`.
+
+For example, to write benchmark results to a local directory:
+
+```
+benchmark --type=tpcds --scale=1 --output=file:///tmp/benchmark-results/vanilla
+```
+
+This command writes `tpcds_1.json` into that directory.
+
+To write benchmark results to HDFS directly:
+
+```
+benchmark --type=tpcds --scale=1 --output=hdfs://namenode:8020/benchmarks/vanilla
 ```
 
 ## Compare results
@@ -99,6 +115,6 @@ Example of comparing two benchmark result files:
 
 ```
 python scripts/generate-comparison.py \
-  vanilla-tpcds-1.json comet-tpcds-1.json \
+  benchmark-results/vanilla/tpcds_1.json benchmark-results/comet/tpcds_1.json \
   --labels "Spark" "Comet" -benchmark "tpcds" --title "tpcds-1"
 ```

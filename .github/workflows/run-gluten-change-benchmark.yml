@@ -104,13 +104,13 @@ jobs:
             --conf spark.driver.memory=4g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   run-benchmark-gluten-first:
     name: Run benchmark on spark with gluten (First)
@@ -202,13 +202,13 @@ jobs:
             --conf spark.memory.offHeap.size=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/gluten-first
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_gluten_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            gluten-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/gluten-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   run-benchmark-gluten-second:
     name: Run benchmark on spark with gluten (Second)
@@ -298,13 +298,13 @@ jobs:
             --conf spark.memory.offHeap.size=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
-            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=gluten-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/gluten-second
       - name: Upload benchmark result
         uses: actions/upload-artifact@v4
         with:
           name: benchmark_result_gluten_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
-            gluten-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json
+            benchmark-results/gluten-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
 
   report-benchmark:
     name: Report benchmark result
@@ -330,7 +330,7 @@ jobs:
           ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
-            vanilla-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-first-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json gluten-second-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}.json \
+            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/gluten-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/gluten-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json \
             --labels "Spark" "Gluten First" "Gluten Second" \
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
           ls -all
