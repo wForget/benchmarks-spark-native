@@ -29,7 +29,7 @@ jobs:
         java-version: [ '17' ]
         spark-version: [ '3.5.4' ]
         benchmark: [ 'tpcds', 'tpch' ]
-        benchmark-scale: [ '1' ]
+        benchmark-scale: [ '10' ]
     uses: ./.github/workflows/build-benchmark.yml
     with:
       java-version: ${{ matrix.java-version }}
@@ -46,7 +46,7 @@ jobs:
         java-version: [ '17' ]
         spark-version: [ '3.5.4' ]
         benchmark: [ 'tpcds', 'tpch' ]
-        benchmark-scale: [ '1' ]
+        benchmark-scale: [ '10' ]
     uses: ./.github/workflows/run-benchmark.yml
     with:
       java-version: ${{ matrix.java-version }}
