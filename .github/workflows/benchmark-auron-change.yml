@@ -1,0 +1,72 @@
+name: Spark Native Engine Benchmark (Auron Change)
+
+on:
+  workflow_dispatch:
+    inputs:
+      benchmark:
+        default: 'tpcds'
+        description: 'Benchmark to run (tpcds or tpch)'
+        required: true
+        type: string
+      benchmark-scale:
+        default: '10'
+        description: 'Scale factor for benchmark, like: tiny, 1, 10, 100, 1000...'
+        required: true
+        type: string
+      auron-repository-first:
+        default: 'apache/auron'
+        description: 'The repository of first auron to build'
+        required: false
+        type: string
+      auron-ref-first:
+        default: 'master'
+        description: 'The commit id of first auron to build'
+        required: false
+        type: string
+      auron-repository-second:
+        default: 'apache/auron'
+        description: 'The repository of second auron to build'
+        required: false
+        type: string
+      auron-ref-second:
+        description: 'The commit id of second auron to build'
+        required: true
+        type: string
+
+permissions:
+  issues: write
+
+jobs:
+  build-benchmark:
+    name: Build Benchmark (Auron Change)
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: [ '17' ]
+        spark-version: [ '3.5.4' ]
+    uses: ./.github/workflows/build-benchmark.yml
+    with:
+      java-version: ${{ matrix.java-version }}
+      spark-version: ${{ matrix.spark-version }}
+      benchmark: ${{ inputs.benchmark }}
+      benchmark-scale: ${{ inputs.benchmark-scale }}
+    secrets: inherit
+  run-benchmark:
+    name: Run Benchmark (Auron Change)
+    needs: [build-benchmark]
+    strategy:
+      fail-fast: false
+      matrix:
+        java-version: [ '17' ]
+        spark-version: [ '3.5.4' ]
+    uses: ./.github/workflows/run-auron-change-benchmark.yml
+    with:
+      java-version: ${{ matrix.java-version }}
+      spark-version: ${{ matrix.spark-version }}
+      benchmark: ${{ inputs.benchmark }}
+      benchmark-scale: ${{ inputs.benchmark-scale }}
+      auron-repository-first: ${{ inputs.auron-repository-first }}
+      auron-ref-first: ${{ inputs.auron-ref-first }}
+      auron-repository-second: ${{ inputs.auron-repository-second }}
+      auron-ref-second: ${{ inputs.auron-ref-second }}
+    secrets: inherit
