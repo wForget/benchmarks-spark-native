@@ -139,34 +139,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Setup Rust & Java toolchain
-        uses: ./.github/actions/setup-builder
-        with:
-          rust-version: 'stable'
-          jdk-version: ${{ inputs.java-version }}
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
-      - name: Checkout Auron (First)
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ inputs.auron-repository-first }}
-          path: auron
-          ref: ${{ inputs.auron-ref-first }}
-          fetch-depth: 1
       - name: Build Auron (First)
-        shell: bash
-        run: |
-          cd auron
-          export RUSTFLAGS="-C target-cpu=x86-64"
-          ./auron-build.sh \
-            --release \
-            --sparkver ${{ inputs.spark-binary-version }} \
-            --scalaver ${{ inputs.scala-binary-version }} \
-            --clean true \
-            --skiptests true
+        uses: ./.github/actions/build-auron
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.auron-repository-first }}
+          ref: ${{ inputs.auron-ref-first }}
       - name: Run benchmark (First)
         run: |
-          cp auron/target/auron-spark-${{ inputs.spark-binary-version }}*.jar $SPARK_HOME/jars
+          cp auron-spark-${{ inputs.spark-binary-version }}*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -226,34 +209,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Setup Rust & Java toolchain
-        uses: ./.github/actions/setup-builder
-        with:
-          rust-version: 'stable'
-          jdk-version: ${{ inputs.java-version }}
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
-      - name: Checkout Auron (Second)
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ inputs.auron-repository-second }}
-          path: auron
-          ref: ${{ inputs.auron-ref-second }}
-          fetch-depth: 1
       - name: Build Auron (Second)
-        shell: bash
-        run: |
-          cd auron
-          export RUSTFLAGS="-C target-cpu=x86-64"
-          ./auron-build.sh \
-            --release \
-            --sparkver ${{ inputs.spark-binary-version }} \
-            --scalaver ${{ inputs.scala-binary-version }} \
-            --clean true \
-            --skiptests true
+        uses: ./.github/actions/build-auron
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.auron-repository-second }}
+          ref: ${{ inputs.auron-ref-second }}
       - name: Run benchmark (Second)
         run: |
-          cp auron/target/auron-spark-${{ inputs.spark-binary-version }}*.jar $SPARK_HOME/jars
+          cp auron-spark-${{ inputs.spark-binary-version }}*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)

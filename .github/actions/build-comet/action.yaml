@@ -1,0 +1,73 @@
+name: build-comet
+description: 'Build Datafusion Comet and cache the jar by checked-out commit'
+inputs:
+  java-version:
+    description: 'jdk version to build with'
+    required: false
+    default: '8'
+  spark-binary-version:
+    description: 'spark binary version (e.g. 3.5)'
+    required: false
+    default: '3.5'
+  scala-binary-version:
+    description: 'scala binary version (e.g. 2.12)'
+    required: false
+    default: '2.12'
+  repository:
+    description: 'repository of comet to build'
+    required: false
+    default: 'apache/datafusion-comet'
+  ref:
+    description: 'branch/commit of comet to build'
+    required: false
+    default: 'main'
+outputs:
+  cache-key:
+    description: 'Cache key of the built comet jar'
+    value: ${{ steps.cache-key.outputs.key }}
+  jar-path:
+    description: 'Glob path of the built comet jar'
+    value: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
+runs:
+  using: composite
+  steps:
+    - name: Checkout Datafusion Comet
+      uses: actions/checkout@v5
+      with:
+        repository: ${{ inputs.repository }}
+        path: datafusion-comet
+        ref: ${{ inputs.ref }}
+        fetch-depth: 1
+    - name: Resolve commit and cache key
+      id: cache-key
+      shell: bash
+      run: |
+        commit=$(git -C datafusion-comet rev-parse HEAD)
+        echo "commit=$commit" >> $GITHUB_OUTPUT
+        echo "key=comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-$commit" >> $GITHUB_OUTPUT
+    - name: Get cached Datafusion Comet lib
+      id: get-comet-spark-cache
+      uses: actions/cache/restore@v5
+      with:
+        path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
+        key: ${{ steps.cache-key.outputs.key }}
+    - name: Setup Rust & Java toolchain
+      if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
+      uses: ./.github/actions/setup-builder
+      with:
+        rust-version: 'stable'
+        jdk-version: ${{ inputs.java-version }}
+    - name: Build Datafusion Comet
+      if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        cd datafusion-comet
+        make core-amd64-libs
+        PROFILES="-Pspark-${{ inputs.spark-binary-version }}" make jvm
+        cp spark/target/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar ..
+    - name: Cached Datafusion Comet lib
+      if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
+        key: ${{ steps.cache-key.outputs.key }}

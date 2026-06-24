@@ -1,0 +1,103 @@
+name: build-gluten
+description: 'Build Gluten and cache the jar by checked-out commit'
+inputs:
+  java-version:
+    description: 'jdk version to build with'
+    required: false
+    default: '8'
+  spark-binary-version:
+    description: 'spark binary version (e.g. 3.5)'
+    required: false
+    default: '3.5'
+  scala-binary-version:
+    description: 'scala binary version (e.g. 2.12)'
+    required: false
+    default: '2.12'
+  repository:
+    description: 'repository of gluten to build'
+    required: false
+    default: 'apache/gluten'
+  ref:
+    description: 'branch/commit of gluten to build'
+    required: false
+    default: 'main'
+outputs:
+  cache-key:
+    description: 'Cache key of the built gluten jar'
+    value: ${{ steps.cache-key.outputs.key }}
+  jar-path:
+    description: 'Glob path of the built gluten jar'
+    value: gluten-velox-bundle-spark*.jar
+runs:
+  using: composite
+  steps:
+    - name: Checkout Gluten
+      uses: actions/checkout@v5
+      with:
+        repository: ${{ inputs.repository }}
+        path: gluten
+        ref: ${{ inputs.ref }}
+        fetch-depth: 1
+    - name: Resolve commit and cache key
+      id: cache-key
+      shell: bash
+      run: |
+        commit=$(git -C gluten rev-parse HEAD)
+        echo "commit=$commit" >> $GITHUB_OUTPUT
+        echo "key=gluten-spark${{ inputs.spark-binary-version }}-$commit" >> $GITHUB_OUTPUT
+    - name: Get cached gluten lib
+      id: get-gluten-spark-cache
+      uses: actions/cache/restore@v5
+      with:
+        path: gluten-velox-bundle-spark*.jar
+        key: ${{ steps.cache-key.outputs.key }}
+    - name: Setup Rust & Java toolchain
+      if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
+      uses: ./.github/actions/setup-builder
+      with:
+        jdk-version: ${{ inputs.java-version }}
+    - name: Setup Maven
+      if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
+      uses: ./.github/actions/setup-maven
+    - name: Get date
+      if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
+      id: get-date
+      shell: bash
+      run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+    - name: Get cached gluten ccache
+      if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
+      id: gluten-ccache-cache
+      uses: actions/cache@v5
+      with:
+        path: gluten/.ccache
+        key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ccache-centos7-release-default
+    - name: Build Gluten
+      if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        cd gluten
+        docker run -v $GITHUB_WORKSPACE/gluten:/work -w /work apache/gluten:vcpkg-centos-7-gcc13 bash -c "
+          df -a
+          cd /work
+          export CCACHE_DIR=/work/.ccache
+          bash dev/ci-velox-buildstatic-centos-7.sh
+          ccache -s
+          mkdir -p /work/.m2/repository/org/apache/arrow/
+          cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
+        "
+        mkdir -p ~/.m2/repository/org/apache/arrow
+        cp -r $GITHUB_WORKSPACE/gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
+        GLUTEN_PROFILES="-Pspark-${{ inputs.spark-binary-version }} -Pbackends-velox -Pceleborn -Puniffle"
+        if [ "${{ inputs.java-version }}" != "8" ]; then
+          GLUTEN_PROFILES="$GLUTEN_PROFILES -Pjava-${{ inputs.java-version }}"
+        fi
+        ./build/mvn clean install $GLUTEN_PROFILES -DskipTests -Dmaven.source.skip
+        cp package/target/gluten-velox-bundle-spark*.jar ..
+    - name: Cached Gluten lib
+      if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: gluten-velox-bundle-spark*.jar
+        key: ${{ steps.cache-key.outputs.key }}

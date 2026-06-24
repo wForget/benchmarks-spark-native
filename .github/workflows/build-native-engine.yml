@@ -27,6 +27,40 @@ on:
         default: '2.12'
         required: false
         type: string
+      comet-repository:
+        default: 'apache/datafusion-comet'
+        required: false
+        type: string
+      comet-ref:
+        default: 'main'
+        required: false
+        type: string
+      auron-repository:
+        default: 'apache/auron'
+        required: false
+        type: string
+      auron-ref:
+        default: 'master'
+        required: false
+        type: string
+      gluten-repository:
+        default: 'apache/gluten'
+        required: false
+        type: string
+      gluten-ref:
+        default: 'main'
+        required: false
+        type: string
+    outputs:
+      comet-cache-key:
+        description: 'Cache key of the built comet jar'
+        value: ${{ jobs.build-comet.outputs.cache-key }}
+      auron-cache-key:
+        description: 'Cache key of the built auron jar'
+        value: ${{ jobs.build-auron.outputs.cache-key }}
+      gluten-cache-key:
+        description: 'Cache key of the built gluten jar'
+        value: ${{ jobs.build-gluten.outputs.cache-key }}
 
 permissions:
   issues: write
@@ -35,164 +69,53 @@ jobs:
   build-comet:
     name: Build comet
     runs-on: ${{ inputs.os }}
+    outputs:
+      cache-key: ${{ steps.build.outputs.cache-key }}
     steps:
       - uses: actions/checkout@v5
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-      - name: Get cached Datafusion Comet lib
-        id: get-comet-spark-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
-          key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
-      - name: Checkout Datafusion Comet
-        if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v5
-        with:
-          repository: apache/datafusion-comet
-          path: datafusion-comet
-          ref: main
-          fetch-depth: 1
-      - name: Setup Rust & Java toolchain
-        if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
-        uses: ./.github/actions/setup-builder
-        with:
-          rust-version: 'stable'
-          jdk-version: ${{ inputs.java-version }}
       - name: Build Datafusion Comet
-        if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          cd datafusion-comet
-          make core-amd64-libs
-          PROFILES="-Pspark-${{ inputs.spark-binary-version }}" make jvm
-          cp spark/target/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar ..
-      - name: Cached Datafusion Comet lib
-        if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        id: build
+        uses: ./.github/actions/build-comet
         with:
-          path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
-          key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.comet-repository }}
+          ref: ${{ inputs.comet-ref }}
 
   build-auron:
     name: Build auron
     runs-on: ${{ inputs.os }}
+    outputs:
+      cache-key: ${{ steps.build.outputs.cache-key }}
     steps:
       - uses: actions/checkout@v5
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-      - name: Get cached Auron lib
-        id: get-auron-spark-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: auron-spark-${{inputs.spark-binary-version}}*.jar
-          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
-      - name: Checkout Auron
-        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v5
-        with:
-          repository: apache/auron
-          path: auron
-          ref: master
-          fetch-depth: 1
-      - name: Setup Rust & Java toolchain
-        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
-        uses: ./.github/actions/setup-builder
-        with:
-          rust-version: 'stable'
-          jdk-version: ${{ inputs.java-version }}
-      - name: Setup Maven
-        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
-        uses: ./.github/actions/setup-maven
       - name: Build Auron
-        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          cd auron
-          export RUSTFLAGS="-C target-cpu=x86-64"
-          ./auron-build.sh \
-            --release \
-            --sparkver ${{ inputs.spark-binary-version }} \
-            --scalaver ${{ inputs.scala-binary-version }} \
-            --clean true \
-            --skiptests true
-          cp target/auron-spark-${{inputs.spark-binary-version}}*.jar ..
-      - name: Cached Auron lib
-        if: steps.get-auron-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        id: build
+        uses: ./.github/actions/build-auron
         with:
-          path: auron-spark-${{inputs.spark-binary-version}}*.jar
-          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.auron-repository }}
+          ref: ${{ inputs.auron-ref }}
 
   build-gluten:
     name: Build gluten
     runs-on: ${{ inputs.os }}
+    outputs:
+      cache-key: ${{ steps.build.outputs.cache-key }}
     steps:
       - uses: actions/checkout@v5
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-      - name: Get cached gluten lib
-        id: get-gluten-spark-cache
-        uses: actions/cache/restore@v5
-        with:
-          path: gluten-velox-bundle-spark*.jar
-          key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
-      - name: Checkout Gluten
-        if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/checkout@v5
-        with:
-          repository: apache/gluten
-          path: gluten
-          ref: main
-          fetch-depth: 1
-      - name: Setup Rust & Java toolchain
-        if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
-        uses: ./.github/actions/setup-builder
-        with:
-          jdk-version: ${{ inputs.java-version }}
-      - name: Setup Maven
-        if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
-        uses: ./.github/actions/setup-maven
-      - name: Get cached gluten ccache
-        if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
-        id: gluten-ccache-cache
-        uses: actions/cache@v5
-        with:
-          path: gluten/.ccache
-          key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
-          restore-keys: |
-            ccache-centos7-release-default
       - name: Build Gluten
-        if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          cd gluten
-          docker run -v $GITHUB_WORKSPACE/gluten:/work -w /work apache/gluten:vcpkg-centos-7-gcc13 bash -c "
-            df -a
-            cd /work
-            export CCACHE_DIR=/work/.ccache
-            bash dev/ci-velox-buildstatic-centos-7.sh
-            ccache -s
-            mkdir -p /work/.m2/repository/org/apache/arrow/
-            cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
-          "
-          mkdir -p ~/.m2/repository/org/apache/arrow
-          cp -r $GITHUB_WORKSPACE/gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
-          GLUTEN_PROFILES="-Pspark-${{ inputs.spark-binary-version }} -Pbackends-velox -Pceleborn -Puniffle"
-          if [ "${{ inputs.java-version }}" != "8" ]; then
-            GLUTEN_PROFILES="$GLUTEN_PROFILES -Pjava-${{ inputs.java-version }}"
-          fi
-          ./build/mvn clean install $GLUTEN_PROFILES -DskipTests -Dmaven.source.skip
-          cp package/target/gluten-velox-bundle-spark*.jar ..
-      - name: Cached Gluten lib
-        if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        id: build
+        uses: ./.github/actions/build-gluten
         with:
-          path: gluten-velox-bundle-spark*.jar
-          key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.gluten-repository }}
+          ref: ${{ inputs.gluten-ref }}
 
   upload-all-engine:
     name: Upload all engine jars
@@ -206,19 +129,19 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
-          key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
+          key: ${{ needs.build-comet.outputs.cache-key }}
           fail-on-cache-miss: 'true'
       - name: Get cached Auron lib
         uses: actions/cache/restore@v5
         with:
           path: auron-spark-${{inputs.spark-binary-version}}*.jar
-          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          key: ${{ needs.build-auron.outputs.cache-key }}
           fail-on-cache-miss: 'true'
       - name: Get cached gluten lib
         uses: actions/cache/restore@v5
         with:
           path: gluten-velox-bundle-spark*.jar
-          key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          key: ${{ needs.build-gluten.outputs.cache-key }}
           fail-on-cache-miss: 'true'
       - name: Upload native engine jars
         uses: actions/upload-artifact@v6

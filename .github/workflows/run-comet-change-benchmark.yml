@@ -69,9 +69,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -122,9 +119,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -145,28 +139,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Setup Rust & Java toolchain
-        uses: ./.github/actions/setup-builder
-        with:
-          rust-version: 'stable'
-          jdk-version: ${{ inputs.java-version }}
-      ## build first comet and run benchmark
-      - name: Checkout Datafusion Comet (First)
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ inputs.comet-repository-first }}
-          path: datafusion-comet
-          ref: ${{ inputs.comet-ref-first }}
-          fetch-depth: 1
       - name: Build Datafusion Comet (First)
-        shell: bash
-        run: |
-          cd datafusion-comet
-          make core-amd64-libs
-          PROFILES="-Pspark-${{ inputs.spark-binary-version }}" make jvm
+        uses: ./.github/actions/build-comet
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.comet-repository-first }}
+          ref: ${{ inputs.comet-ref-first }}
       - name: Run benchmark (First)
         run: |
-          cp datafusion-comet/spark/target/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
+          cp comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -201,9 +184,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -224,28 +204,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Setup Rust & Java toolchain
-        uses: ./.github/actions/setup-builder
-        with:
-          rust-version: 'stable'
-          jdk-version: ${{ inputs.java-version }}
-      # build second comet and run benchmark
-      - name: Checkout Datafusion Comet (Second)
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ inputs.comet-repository-second }}
-          path: datafusion-comet
-          ref: ${{ inputs.comet-ref-second }}
-          fetch-depth: 1
       - name: Build Datafusion Comet (Second)
-        shell: bash
-        run: |
-          cd datafusion-comet
-          make core-amd64-libs
-          PROFILES="-Pspark-${{ inputs.spark-binary-version }}" make jvm
+        uses: ./.github/actions/build-comet
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.comet-repository-second }}
+          ref: ${{ inputs.comet-ref-second }}
       - name: Run benchmark (Second)
         run: |
-          cp datafusion-comet/spark/target/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
+          cp comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)

@@ -35,6 +35,18 @@ on:
         description: 'Scale factor for benchmark, like: tiny, 1, 10, 100, 1000...'
         required: true
         type: string
+      comet-cache-key:
+        description: 'Cache key of the comet jar built by build-native-engine'
+        required: true
+        type: string
+      auron-cache-key:
+        description: 'Cache key of the auron jar built by build-native-engine'
+        required: true
+        type: string
+      gluten-cache-key:
+        description: 'Cache key of the gluten jar built by build-native-engine'
+        required: true
+        type: string
 
 permissions:
   issues: write
@@ -50,9 +62,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -103,9 +112,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -125,7 +131,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
-          key: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
+          key: ${{ inputs.comet-cache-key }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
         uses: ./.github/actions/setup-spark
@@ -169,9 +175,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -191,7 +194,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: auron-spark-${{inputs.spark-binary-version}}*.jar
-          key: auron-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          key: ${{ inputs.auron-cache-key }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
         uses: ./.github/actions/setup-spark
@@ -240,9 +243,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -262,7 +262,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: gluten-velox-bundle-spark*.jar
-          key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
+          key: ${{ inputs.gluten-cache-key }}
           fail-on-cache-miss: 'true'
       - name: Setup Spark
         uses: ./.github/actions/setup-spark

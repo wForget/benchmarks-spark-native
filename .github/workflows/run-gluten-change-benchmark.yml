@@ -69,9 +69,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -122,9 +119,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -145,52 +139,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Setup Rust & Java toolchain
-        uses: ./.github/actions/setup-builder
+      - name: Build Gluten (First)
+        uses: ./.github/actions/build-gluten
         with:
-          rust-version: 'stable'
-          jdk-version: ${{ inputs.java-version }}
-      ## build first gluten and run benchmark
-      - name: Checkout Gluten
-        uses: actions/checkout@v5
-        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
           repository: ${{ inputs.gluten-repository-first }}
-          path: gluten
           ref: ${{ inputs.gluten-ref-first }}
-          fetch-depth: 1
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
-      - name: Get cached gluten ccache
-        id: gluten-ccache-cache
-        uses: actions/cache@v5
-        with:
-          path: gluten/.ccache
-          key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
-          restore-keys: |
-            ccache-centos7-release-default
-      - name: Build Gluten
-        shell: bash
-        run: |
-          cd gluten
-          docker run -v $GITHUB_WORKSPACE/gluten:/work -w /work apache/gluten:vcpkg-centos-7-gcc13 bash -c "
-            df -a
-            cd /work
-            export CCACHE_DIR=/work/.ccache
-            bash dev/ci-velox-buildstatic-centos-7.sh
-            ccache -s
-            mkdir -p /work/.m2/repository/org/apache/arrow/
-            cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
-          "
-          mkdir -p ~/.m2/repository/org/apache/arrow
-          cp -r $GITHUB_WORKSPACE/gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
-          GLUTEN_PROFILES="-Pspark-${{ inputs.spark-binary-version }} -Pbackends-velox -Pceleborn -Puniffle"
-          if [ "${{ inputs.java-version }}" != "8" ]; then
-            GLUTEN_PROFILES="$GLUTEN_PROFILES -Pjava-${{ inputs.java-version }}"
-          fi
-          ./build/mvn clean install $GLUTEN_PROFILES -DskipTests -Dmaven.source.skip
       - name: Run benchmark (First)
         run: |
-          cp gluten/package/target/gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
+          cp gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -224,9 +183,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
-      - name: Get date
-        id: get-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Get cached benchmark lib
         uses: actions/cache/restore@v5
         with:
@@ -247,50 +203,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Setup Rust & Java toolchain
-        uses: ./.github/actions/setup-builder
-        with:
-          rust-version: 'stable'
-          jdk-version: ${{ inputs.java-version }}
-      # build second gluten and run benchmark
-      - name: Checkout Gluten
-        uses: actions/checkout@v5
-        with:
-          repository: ${{ inputs.gluten-repository-second }}
-          path: gluten
-          ref: ${{ inputs.gluten-ref-second }}
-          fetch-depth: 1
-      - name: Get cached gluten ccache
-        id: gluten-ccache-cache
-        uses: actions/cache@v5
-        with:
-          path: gluten/.ccache
-          key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
-          restore-keys: |
-            ccache-centos7-release-default
       - name: Build Gluten (Second)
-        shell: bash
-        run: |
-          cd gluten
-          docker run -v $GITHUB_WORKSPACE/gluten:/work -w /work apache/gluten:vcpkg-centos-7-gcc13 bash -c "
-            df -a
-            cd /work
-            export CCACHE_DIR=/work/.ccache
-            bash dev/ci-velox-buildstatic-centos-7.sh
-            ccache -s
-            mkdir -p /work/.m2/repository/org/apache/arrow/
-            cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
-          "
-          mkdir -p ~/.m2/repository/org/apache/arrow
-          cp -r $GITHUB_WORKSPACE/gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
-          GLUTEN_PROFILES="-Pspark-${{ inputs.spark-binary-version }} -Pbackends-velox -Pceleborn -Puniffle"
-          if [ "${{ inputs.java-version }}" != "8" ]; then
-            GLUTEN_PROFILES="$GLUTEN_PROFILES -Pjava-${{ inputs.java-version }}"
-          fi
-          ./build/mvn clean install $GLUTEN_PROFILES -DskipTests -Dmaven.source.skip
+        uses: ./.github/actions/build-gluten
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.gluten-repository-second }}
+          ref: ${{ inputs.gluten-ref-second }}
       - name: Run benchmark (Second)
         run: |
-          cp gluten/package/target/gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
+          cp gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)

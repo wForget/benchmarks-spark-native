@@ -53,4 +53,7 @@ jobs:
       spark-version: ${{ matrix.spark-version }}
       benchmark: ${{ matrix.benchmark }}
       benchmark-scale: ${{ matrix.benchmark-scale }}
+      comet-cache-key: ${{ needs.build-native-engine.outputs.comet-cache-key }}
+      auron-cache-key: ${{ needs.build-native-engine.outputs.auron-cache-key }}
+      gluten-cache-key: ${{ needs.build-native-engine.outputs.gluten-cache-key }}
     secrets: inherit
