@@ -219,6 +219,7 @@ jobs:
             --conf spark.shuffle.manager=org.apache.spark.sql.execution.auron.shuffle.AuronShuffleManager \
             --conf spark.memory.offHeap.enabled=false \
             --conf spark.auron.decimal.arithOp.enabled=true \
+            --conf spark.auron.tokio.worker.threads.per.cpu=1 \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/auron
