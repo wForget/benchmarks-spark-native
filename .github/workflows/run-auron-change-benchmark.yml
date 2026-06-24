@@ -103,7 +103,7 @@ jobs:
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
       - name: Upload benchmark result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
@@ -190,7 +190,7 @@ jobs:
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/auron-first
       - name: Upload benchmark result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_auron_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
@@ -277,7 +277,7 @@ jobs:
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/auron-second
       - name: Upload benchmark result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_auron_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
@@ -291,17 +291,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Download vanilla benchmark result
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: benchmark-results/vanilla
       - name: Download auron benchmark result (first)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: benchmark_result_auron_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: benchmark-results/auron-first
       - name: Download auron benchmark result (second)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: benchmark_result_auron_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: benchmark-results/auron-second
@@ -315,7 +315,7 @@ jobs:
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
           ls -all
       - name: Upload comparison
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: comparison_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |

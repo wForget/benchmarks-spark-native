@@ -221,7 +221,7 @@ jobs:
           key: gluten-spark${{ inputs.spark-binary-version }}-${{ steps.get-date.outputs.date }}
           fail-on-cache-miss: 'true'
       - name: Upload native engine jars
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: spark_native_jars_${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-${{ steps.get-date.outputs.date }}
           path: |

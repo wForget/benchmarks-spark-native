@@ -106,7 +106,7 @@ jobs:
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
       - name: Upload benchmark result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
@@ -185,7 +185,7 @@ jobs:
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet-first
       - name: Upload benchmark result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_comet_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
@@ -264,7 +264,7 @@ jobs:
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet-second
       - name: Upload benchmark result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_comet_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
@@ -278,17 +278,17 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Download vanilla benchmark result
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: benchmark-results/vanilla
       - name: Download comet benchmark result (first)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: benchmark_result_comet_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: benchmark-results/comet-first
       - name: Download comet benchmark result (second)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: benchmark_result_comet_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: benchmark-results/comet-second
@@ -302,7 +302,7 @@ jobs:
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
           ls -all
       - name: Upload comparison
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: comparison_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
