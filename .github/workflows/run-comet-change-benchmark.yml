@@ -164,14 +164,13 @@ jobs:
       - name: Run benchmark on spark with comet (First)
         run: |
           COMET_JAR=$(ls $(pwd)/engine-jars/first/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar | head -n 1)
+          rm -f $SPARK_HOME/jars/comet-spark-spark*.jar
+          cp $COMET_JAR $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
-            --jars $COMET_JAR \
-            --conf spark.driver.extraClassPath=$COMET_JAR \
-            --conf spark.executor.extraClassPath=$COMET_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -187,14 +186,13 @@ jobs:
       - name: Run benchmark on spark with comet (Second)
         run: |
           COMET_JAR=$(ls $(pwd)/engine-jars/second/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar | head -n 1)
+          rm -f $SPARK_HOME/jars/comet-spark-spark*.jar
+          cp $COMET_JAR $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
-            --jars $COMET_JAR \
-            --conf spark.driver.extraClassPath=$COMET_JAR \
-            --conf spark.executor.extraClassPath=$COMET_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \

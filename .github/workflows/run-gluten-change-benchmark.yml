@@ -164,14 +164,13 @@ jobs:
       - name: Run benchmark on spark with gluten (First)
         run: |
           GLUTEN_JAR=$(ls $(pwd)/engine-jars/first/gluten-velox-bundle-spark*.jar | head -n 1)
+          rm -f $SPARK_HOME/jars/gluten-velox-bundle-spark*.jar
+          cp $GLUTEN_JAR $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
-            --jars $GLUTEN_JAR \
-            --conf spark.driver.extraClassPath=$GLUTEN_JAR \
-            --conf spark.executor.extraClassPath=$GLUTEN_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -186,14 +185,13 @@ jobs:
       - name: Run benchmark on spark with gluten (Second)
         run: |
           GLUTEN_JAR=$(ls $(pwd)/engine-jars/second/gluten-velox-bundle-spark*.jar | head -n 1)
+          rm -f $SPARK_HOME/jars/gluten-velox-bundle-spark*.jar
+          cp $GLUTEN_JAR $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
-            --jars $GLUTEN_JAR \
-            --conf spark.driver.extraClassPath=$GLUTEN_JAR \
-            --conf spark.executor.extraClassPath=$GLUTEN_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \

@@ -164,14 +164,13 @@ jobs:
       - name: Run benchmark on spark with auron (First)
         run: |
           AURON_JAR=$(ls $(pwd)/engine-jars/first/auron-spark-${{ inputs.spark-binary-version }}*.jar | head -n 1)
+          rm -f $SPARK_HOME/jars/auron-spark-*.jar
+          cp $AURON_JAR $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
-            --jars $AURON_JAR \
-            --conf spark.driver.extraClassPath=$AURON_JAR \
-            --conf spark.executor.extraClassPath=$AURON_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -192,14 +191,13 @@ jobs:
       - name: Run benchmark on spark with auron (Second)
         run: |
           AURON_JAR=$(ls $(pwd)/engine-jars/second/auron-spark-${{ inputs.spark-binary-version }}*.jar | head -n 1)
+          rm -f $SPARK_HOME/jars/auron-spark-*.jar
+          cp $AURON_JAR $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
-            --jars $AURON_JAR \
-            --conf spark.driver.extraClassPath=$AURON_JAR \
-            --conf spark.executor.extraClassPath=$AURON_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
