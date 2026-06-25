@@ -163,9 +163,8 @@ jobs:
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
       - name: Run benchmark on spark with auron (First)
         run: |
-          AURON_JAR=$(ls $(pwd)/engine-jars/first/auron-spark-${{ inputs.spark-binary-version }}*.jar | head -n 1)
           rm -f $SPARK_HOME/jars/auron-spark-*.jar
-          cp $AURON_JAR $SPARK_HOME/jars/
+          cp $(pwd)/engine-jars/first/auron-spark-${{ inputs.spark-binary-version }}*.jar $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -190,9 +189,8 @@ jobs:
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/auron-first
       - name: Run benchmark on spark with auron (Second)
         run: |
-          AURON_JAR=$(ls $(pwd)/engine-jars/second/auron-spark-${{ inputs.spark-binary-version }}*.jar | head -n 1)
           rm -f $SPARK_HOME/jars/auron-spark-*.jar
-          cp $AURON_JAR $SPARK_HOME/jars/
+          cp $(pwd)/engine-jars/second/auron-spark-${{ inputs.spark-binary-version }}*.jar $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)

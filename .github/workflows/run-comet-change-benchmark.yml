@@ -150,6 +150,9 @@ jobs:
           path: engine-jars/second
       - name: Run benchmark on vanilla spark
         run: |
+          ls $(pwd)
+          ls $(pwd)/engine-jars
+          ls $(pwd)/engine-jars/second/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -163,9 +166,8 @@ jobs:
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
       - name: Run benchmark on spark with comet (First)
         run: |
-          COMET_JAR=$(ls $(pwd)/engine-jars/first/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar | head -n 1)
           rm -f $SPARK_HOME/jars/comet-spark-spark*.jar
-          cp $COMET_JAR $SPARK_HOME/jars/
+          cp $(pwd)/engine-jars/first/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -185,9 +187,8 @@ jobs:
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet-first
       - name: Run benchmark on spark with comet (Second)
         run: |
-          COMET_JAR=$(ls $(pwd)/engine-jars/second/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar | head -n 1)
           rm -f $SPARK_HOME/jars/comet-spark-spark*.jar
-          cp $COMET_JAR $SPARK_HOME/jars/
+          cp $(pwd)/engine-jars/second/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)

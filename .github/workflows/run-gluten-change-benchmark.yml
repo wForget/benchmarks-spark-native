@@ -163,9 +163,8 @@ jobs:
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
       - name: Run benchmark on spark with gluten (First)
         run: |
-          GLUTEN_JAR=$(ls $(pwd)/engine-jars/first/gluten-velox-bundle-spark*.jar | head -n 1)
           rm -f $SPARK_HOME/jars/gluten-velox-bundle-spark*.jar
-          cp $GLUTEN_JAR $SPARK_HOME/jars/
+          cp $(pwd)/engine-jars/first/gluten-velox-bundle-spark*.jar $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -184,9 +183,8 @@ jobs:
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/gluten-first
       - name: Run benchmark on spark with gluten (Second)
         run: |
-          GLUTEN_JAR=$(ls $(pwd)/engine-jars/second/gluten-velox-bundle-spark*.jar | head -n 1)
           rm -f $SPARK_HOME/jars/gluten-velox-bundle-spark*.jar
-          cp $GLUTEN_JAR $SPARK_HOME/jars/
+          cp $(pwd)/engine-jars/second/gluten-velox-bundle-spark*.jar $SPARK_HOME/jars/
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
