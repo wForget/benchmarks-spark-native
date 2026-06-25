@@ -150,9 +150,6 @@ jobs:
           path: engine-jars/second
       - name: Run benchmark on vanilla spark
         run: |
-          ls $(pwd)
-          ls $(pwd)/engine-jars
-          ls $(pwd)/engine-jars/second/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -160,7 +157,7 @@ jobs:
             --master local\[4\] \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
-            --conf spark.driver.memory=4g \
+            --conf spark.driver.memory=8g \
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
