@@ -59,9 +59,58 @@ permissions:
   issues: write
 
 jobs:
-  run-benchmark-vanilla:
-    name: Run benchmark on vanilla spark
+  build-gluten-first:
+    name: Build Gluten (First)
     runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Build Gluten (First)
+        uses: ./.github/actions/build-gluten
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.gluten-repository-first }}
+          ref: ${{ inputs.gluten-ref-first }}
+      - name: Upload gluten jar (First)
+        uses: actions/upload-artifact@v6
+        with:
+          name: gluten_jar_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: gluten-velox-bundle-spark*.jar
+
+  build-gluten-second:
+    name: Build Gluten (Second)
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Build Gluten (Second)
+        uses: ./.github/actions/build-gluten
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.gluten-repository-second }}
+          ref: ${{ inputs.gluten-ref-second }}
+      - name: Upload gluten jar (Second)
+        uses: actions/upload-artifact@v6
+        with:
+          name: gluten_jar_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: gluten-velox-bundle-spark*.jar
+
+  run-benchmark:
+    name: Run benchmark
+    runs-on: ${{ inputs.os }}
+    needs: [build-gluten-first, build-gluten-second]
     steps:
       - uses: actions/checkout@v5
       - name: Setup Java
@@ -89,7 +138,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Run benchmark
+      - name: Download gluten jar (First)
+        uses: actions/download-artifact@v7
+        with:
+          name: gluten_jar_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: engine-jars/first
+      - name: Download gluten jar (Second)
+        uses: actions/download-artifact@v7
+        with:
+          name: gluten_jar_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: engine-jars/second
+      - name: Run benchmark on vanilla spark
         run: |
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
@@ -102,59 +161,17 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-gluten-first:
-    name: Run benchmark on spark with gluten (First)
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Build Gluten (First)
-        uses: ./.github/actions/build-gluten
-        with:
-          java-version: ${{ inputs.java-version }}
-          spark-binary-version: ${{ inputs.spark-binary-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-          repository: ${{ inputs.gluten-repository-first }}
-          ref: ${{ inputs.gluten-ref-first }}
-      - name: Run benchmark (First)
+      - name: Run benchmark on spark with gluten (First)
         run: |
-          cp gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
+          GLUTEN_JAR=$(ls $(pwd)/engine-jars/first/gluten-velox-bundle-spark*.jar | head -n 1)
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
+            --jars $GLUTEN_JAR \
+            --conf spark.driver.extraClassPath=$GLUTEN_JAR \
+            --conf spark.executor.extraClassPath=$GLUTEN_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -166,59 +183,17 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/gluten-first
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_gluten_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/gluten-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-gluten-second:
-    name: Run benchmark on spark with gluten (Second)
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Build Gluten (Second)
-        uses: ./.github/actions/build-gluten
-        with:
-          java-version: ${{ inputs.java-version }}
-          spark-binary-version: ${{ inputs.spark-binary-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-          repository: ${{ inputs.gluten-repository-second }}
-          ref: ${{ inputs.gluten-ref-second }}
-      - name: Run benchmark (Second)
+      - name: Run benchmark on spark with gluten (Second)
         run: |
-          cp gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
+          GLUTEN_JAR=$(ls $(pwd)/engine-jars/second/gluten-velox-bundle-spark*.jar | head -n 1)
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
+            --jars $GLUTEN_JAR \
+            --conf spark.driver.extraClassPath=$GLUTEN_JAR \
+            --conf spark.executor.extraClassPath=$GLUTEN_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -230,44 +205,13 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/gluten-second
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_gluten_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/gluten-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  report-benchmark:
-    name: Report benchmark result
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [run-benchmark-vanilla, run-benchmark-gluten-first, run-benchmark-gluten-second]
-    steps:
-      - uses: actions/checkout@v5
-      - name: Download vanilla benchmark result
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/vanilla
-      - name: Download gluten benchmark result (first)
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_gluten_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/gluten-first
-      - name: Download gluten benchmark result (second)
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_gluten_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/gluten-second
       - name: Generate comparison
         run: |
-          ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
             benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/gluten-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/gluten-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json \
             --labels "Spark" "Gluten First" "Gluten Second" \
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
-          ls -all
       - name: Upload comparison
         uses: actions/upload-artifact@v6
         with:

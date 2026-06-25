@@ -59,9 +59,58 @@ permissions:
   issues: write
 
 jobs:
-  run-benchmark-vanilla:
-    name: Run benchmark on vanilla spark
+  build-auron-first:
+    name: Build Auron (First)
     runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Build Auron (First)
+        uses: ./.github/actions/build-auron
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.auron-repository-first }}
+          ref: ${{ inputs.auron-ref-first }}
+      - name: Upload auron jar (First)
+        uses: actions/upload-artifact@v6
+        with:
+          name: auron_jar_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: auron-spark-${{ inputs.spark-binary-version }}*.jar
+
+  build-auron-second:
+    name: Build Auron (Second)
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Build Auron (Second)
+        uses: ./.github/actions/build-auron
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.auron-repository-second }}
+          ref: ${{ inputs.auron-ref-second }}
+      - name: Upload auron jar (Second)
+        uses: actions/upload-artifact@v6
+        with:
+          name: auron_jar_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: auron-spark-${{ inputs.spark-binary-version }}*.jar
+
+  run-benchmark:
+    name: Run benchmark
+    runs-on: ${{ inputs.os }}
+    needs: [build-auron-first, build-auron-second]
     steps:
       - uses: actions/checkout@v5
       - name: Setup Java
@@ -89,7 +138,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Run benchmark
+      - name: Download auron jar (First)
+        uses: actions/download-artifact@v7
+        with:
+          name: auron_jar_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: engine-jars/first
+      - name: Download auron jar (Second)
+        uses: actions/download-artifact@v7
+        with:
+          name: auron_jar_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: engine-jars/second
+      - name: Run benchmark on vanilla spark
         run: |
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
@@ -102,59 +161,17 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-auron-first:
-    name: Run benchmark on spark with auron (First)
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Build Auron (First)
-        uses: ./.github/actions/build-auron
-        with:
-          java-version: ${{ inputs.java-version }}
-          spark-binary-version: ${{ inputs.spark-binary-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-          repository: ${{ inputs.auron-repository-first }}
-          ref: ${{ inputs.auron-ref-first }}
-      - name: Run benchmark (First)
+      - name: Run benchmark on spark with auron (First)
         run: |
-          cp auron-spark-${{ inputs.spark-binary-version }}*.jar $SPARK_HOME/jars
+          AURON_JAR=$(ls $(pwd)/engine-jars/first/auron-spark-${{ inputs.spark-binary-version }}*.jar | head -n 1)
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
+            --jars $AURON_JAR \
+            --conf spark.driver.extraClassPath=$AURON_JAR \
+            --conf spark.executor.extraClassPath=$AURON_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -172,59 +189,17 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/auron-first
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_auron_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/auron-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-auron-second:
-    name: Run benchmark on spark with auron (Second)
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Build Auron (Second)
-        uses: ./.github/actions/build-auron
-        with:
-          java-version: ${{ inputs.java-version }}
-          spark-binary-version: ${{ inputs.spark-binary-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-          repository: ${{ inputs.auron-repository-second }}
-          ref: ${{ inputs.auron-ref-second }}
-      - name: Run benchmark (Second)
+      - name: Run benchmark on spark with auron (Second)
         run: |
-          cp auron-spark-${{ inputs.spark-binary-version }}*.jar $SPARK_HOME/jars
+          AURON_JAR=$(ls $(pwd)/engine-jars/second/auron-spark-${{ inputs.spark-binary-version }}*.jar | head -n 1)
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
+            --jars $AURON_JAR \
+            --conf spark.driver.extraClassPath=$AURON_JAR \
+            --conf spark.executor.extraClassPath=$AURON_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -242,44 +217,13 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/auron-second
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_auron_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/auron-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  report-benchmark:
-    name: Report benchmark result
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [run-benchmark-vanilla, run-benchmark-auron-first, run-benchmark-auron-second]
-    steps:
-      - uses: actions/checkout@v5
-      - name: Download vanilla benchmark result
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/vanilla
-      - name: Download auron benchmark result (first)
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_auron_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/auron-first
-      - name: Download auron benchmark result (second)
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_auron_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/auron-second
       - name: Generate comparison
         run: |
-          ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
             benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/auron-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/auron-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json \
             --labels "Spark" "Auron First" "Auron Second" \
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
-          ls -all
       - name: Upload comparison
         uses: actions/upload-artifact@v6
         with:

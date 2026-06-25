@@ -59,9 +59,58 @@ permissions:
   issues: write
 
 jobs:
-  run-benchmark-vanilla:
-    name: Run benchmark on vanilla spark
+  build-comet-first:
+    name: Build Datafusion Comet (First)
     runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Build Datafusion Comet (First)
+        uses: ./.github/actions/build-comet
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.comet-repository-first }}
+          ref: ${{ inputs.comet-ref-first }}
+      - name: Upload comet jar (First)
+        uses: actions/upload-artifact@v6
+        with:
+          name: comet_jar_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
+
+  build-comet-second:
+    name: Build Datafusion Comet (Second)
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Build Datafusion Comet (Second)
+        uses: ./.github/actions/build-comet
+        with:
+          java-version: ${{ inputs.java-version }}
+          spark-binary-version: ${{ inputs.spark-binary-version }}
+          scala-binary-version: ${{ inputs.scala-binary-version }}
+          repository: ${{ inputs.comet-repository-second }}
+          ref: ${{ inputs.comet-ref-second }}
+      - name: Upload comet jar (Second)
+        uses: actions/upload-artifact@v6
+        with:
+          name: comet_jar_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
+
+  run-benchmark:
+    name: Run benchmark
+    runs-on: ${{ inputs.os }}
+    needs: [build-comet-first, build-comet-second]
     steps:
       - uses: actions/checkout@v5
       - name: Setup Java
@@ -89,7 +138,17 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Run benchmark
+      - name: Download comet jar (First)
+        uses: actions/download-artifact@v7
+        with:
+          name: comet_jar_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: engine-jars/first
+      - name: Download comet jar (Second)
+        uses: actions/download-artifact@v7
+        with:
+          name: comet_jar_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
+          path: engine-jars/second
+      - name: Run benchmark on vanilla spark
         run: |
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
@@ -102,59 +161,17 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-comet-first:
-    name: Run benchmark on spark with comet (First)
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Build Datafusion Comet (First)
-        uses: ./.github/actions/build-comet
-        with:
-          java-version: ${{ inputs.java-version }}
-          spark-binary-version: ${{ inputs.spark-binary-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-          repository: ${{ inputs.comet-repository-first }}
-          ref: ${{ inputs.comet-ref-first }}
-      - name: Run benchmark (First)
+      - name: Run benchmark on spark with comet (First)
         run: |
-          cp comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
+          COMET_JAR=$(ls $(pwd)/engine-jars/first/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar | head -n 1)
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
+            --jars $COMET_JAR \
+            --conf spark.driver.extraClassPath=$COMET_JAR \
+            --conf spark.executor.extraClassPath=$COMET_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -167,59 +184,17 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet-first
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_comet_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/comet-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-comet-second:
-    name: Run benchmark on spark with comet (Second)
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Build Datafusion Comet (Second)
-        uses: ./.github/actions/build-comet
-        with:
-          java-version: ${{ inputs.java-version }}
-          spark-binary-version: ${{ inputs.spark-binary-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-          repository: ${{ inputs.comet-repository-second }}
-          ref: ${{ inputs.comet-ref-second }}
-      - name: Run benchmark (Second)
+      - name: Run benchmark on spark with comet (Second)
         run: |
-          cp comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
+          COMET_JAR=$(ls $(pwd)/engine-jars/second/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar | head -n 1)
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
           $SPARK_HOME/bin/spark-submit \
             --master local\[4\] \
+            --jars $COMET_JAR \
+            --conf spark.driver.extraClassPath=$COMET_JAR \
+            --conf spark.executor.extraClassPath=$COMET_JAR \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
@@ -232,44 +207,13 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet-second
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v6
-        with:
-          name: benchmark_result_comet_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: |
-            benchmark-results/comet-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  report-benchmark:
-    name: Report benchmark result
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [run-benchmark-vanilla, run-benchmark-comet-first, run-benchmark-comet-second]
-    steps:
-      - uses: actions/checkout@v5
-      - name: Download vanilla benchmark result
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/vanilla
-      - name: Download comet benchmark result (first)
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_comet_first_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/comet-first
-      - name: Download comet benchmark result (second)
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_comet_second_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/comet-second
       - name: Generate comparison
         run: |
-          ls -all
           pip install -r requirements.txt
           python scripts/generate-comparison.py \
             benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/comet-first/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json benchmark-results/comet-second/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json \
             --labels "Spark" "Comet First" "Comet Second" \
             --benchmark "${{ inputs.benchmark }}" --title "${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}"
-          ls -all
       - name: Upload comparison
         uses: actions/upload-artifact@v6
         with:
