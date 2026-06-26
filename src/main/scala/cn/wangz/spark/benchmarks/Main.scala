@@ -21,6 +21,7 @@ object Main {
         val context = BenchmarkContext(spark, conf.`type`())
         new BenchmarkRun(context, conf).run()
         spark.stop()
+        exit(0)
       case _ =>
         println("Invalid subcommand")
         exit(-1)
