@@ -63,7 +63,7 @@ runs:
       run: |
         cd datafusion-comet
         make core-amd64-libs
-        PROFILES="-Pspark-${{ inputs.spark-binary-version }}" make jvm
+        PROFILES="-Prelease,spark-${{ inputs.spark-binary-version }}" make jvm
         cp spark/target/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar ..
     - name: Cached Datafusion Comet lib
       if: steps.get-comet-spark-cache.outputs.cache-hit != 'true'
