@@ -25,7 +25,7 @@ on:
         type: string
       comet-repository-second:
         default: 'apache/datafusion-comet'
-        description: 'The repository of first comet to build'
+        description: 'The repository of second comet to build'
         required: false
         type: string
       comet-ref-second:

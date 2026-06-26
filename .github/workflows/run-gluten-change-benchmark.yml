@@ -47,7 +47,7 @@ on:
         type: string
       gluten-repository-second:
         default: 'apache/gluten'
-        description: 'The repository of first gluten to build'
+        description: 'The repository of second gluten to build'
         required: false
         type: string
       gluten-ref-second:
