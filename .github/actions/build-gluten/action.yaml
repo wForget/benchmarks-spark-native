@@ -43,8 +43,9 @@ runs:
       shell: bash
       run: |
         commit=$(git -C gluten rev-parse HEAD)
-        echo "commit=$commit" >> $GITHUB_OUTPUT
-        echo "key=gluten-spark${{ inputs.spark-binary-version }}-$commit" >> $GITHUB_OUTPUT
+        echo "commit=$commit" >> "$GITHUB_OUTPUT"
+        # Include the build recipe to invalidate incomplete jars from older builds.
+        echo "key=gluten-almalinux8-${{ runner.arch }}-spark${{ inputs.spark-binary-version }}-scala${{ inputs.scala-binary-version }}-java${{ inputs.java-version }}-${{ hashFiles('.github/actions/build-gluten/action.yaml') }}-$commit" >> "$GITHUB_OUTPUT"
     - name: Get cached gluten lib
       id: get-gluten-spark-cache
       uses: actions/cache/restore@v5
@@ -70,30 +71,44 @@ runs:
       uses: actions/cache@v5
       with:
         path: gluten/.ccache
-        key: ccache-centos7-release-default-${{ steps.get-date.outputs.date }}
+        key: ccache-almalinux8-release-default-${{ runner.arch }}-${{ steps.get-date.outputs.date }}
         restore-keys: |
-          ccache-centos7-release-default
-    - name: Build Gluten
+          ccache-almalinux8-release-default-${{ runner.arch }}-
+    - name: Build Gluten native libraries
       if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
+        set -euo pipefail
         cd gluten
-        docker run -v $GITHUB_WORKSPACE/gluten:/work -w /work apache/gluten:vcpkg-centos-7-gcc13 bash -c "
+        # Match apache/gluten's build_bundle_package.yml native build environment.
+        docker run --rm -v "$GITHUB_WORKSPACE/gluten:/work" -w /work \
+          apache/gluten:vcpkg-almalinux-8-gcc13 bash -euo pipefail -c '
+          yum install -y bison
           df -a
-          cd /work
           export CCACHE_DIR=/work/.ccache
-          bash dev/ci-velox-buildstatic-centos-7.sh
+          export CCACHE_MAXSIZE=1G
+          bash dev/ci-velox-buildstatic-centos-8.sh
+          test -s cpp/build/releases/libgluten.so
           ccache -s
           mkdir -p /work/.m2/repository/org/apache/arrow/
           cp -r /root/.m2/repository/org/apache/arrow/* /work/.m2/repository/org/apache/arrow/
-        "
+        '
+    - name: Build Gluten bundle
+      if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        GLUTEN_SPARK_VERSION: ${{ inputs.spark-binary-version }}
+        GLUTEN_JAVA_VERSION: ${{ inputs.java-version }}
+      run: |
+        cd gluten
+        test -s cpp/build/releases/libgluten.so
         mkdir -p ~/.m2/repository/org/apache/arrow
-        cp -r $GITHUB_WORKSPACE/gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
-        GLUTEN_PROFILES="-Pspark-${{ inputs.spark-binary-version }} -Pbackends-velox -Pceleborn -Puniffle"
-        if [ "${{ inputs.java-version }}" != "8" ]; then
-          GLUTEN_PROFILES="$GLUTEN_PROFILES -Pjava-${{ inputs.java-version }}"
+        cp -r "$GITHUB_WORKSPACE"/gluten/.m2/repository/org/apache/arrow/* ~/.m2/repository/org/apache/arrow/
+        GLUTEN_PROFILES=("-Pspark-$GLUTEN_SPARK_VERSION" -Pbackends-velox -Pceleborn -Puniffle)
+        if [ "$GLUTEN_JAVA_VERSION" != "8" ]; then
+          GLUTEN_PROFILES+=("-Pjava-$GLUTEN_JAVA_VERSION")
         fi
-        ./build/mvn clean install $GLUTEN_PROFILES -DskipTests -Dmaven.source.skip
+        ./build/mvn clean install "${GLUTEN_PROFILES[@]}" -DskipTests -Dmaven.source.skip
         cp package/target/gluten-velox-bundle-spark*.jar ..
     - name: Cached Gluten lib
       if: steps.get-gluten-spark-cache.outputs.cache-hit != 'true'
