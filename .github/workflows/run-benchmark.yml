@@ -52,9 +52,10 @@ permissions:
   issues: write
 
 jobs:
-  run-benchmark-vanilla:
-    name: Run benchmark on vanilla spark
+  run-benchmark:
+    name: Run all benchmarks and report results
     runs-on: ${{ inputs.os }}
+    # Keep all engines in one job so each comparison uses the same runner.
     steps:
       - uses: actions/checkout@v5
       - name: Setup Java
@@ -82,7 +83,7 @@ jobs:
         with:
           spark-version: ${{ inputs.spark-version }}
           scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Run benchmark
+      - name: Run benchmark on vanilla
         run: |
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
@@ -95,51 +96,22 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/vanilla
-      - name: Upload benchmark result
+      - name: Upload vanilla benchmark result
         uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
             benchmark-results/vanilla/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-comet:
-    name: Run benchmark on spark with comet
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
       - name: Get cached Datafusion Comet lib
         uses: actions/cache/restore@v5
         with:
           path: comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar
           key: ${{ inputs.comet-cache-key }}
           fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Run benchmark
+      - name: Run benchmark on comet
         run: |
+          # Remove this engine from the shared Spark installation even if the run fails.
+          trap 'rm -f "$SPARK_HOME"/jars/comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar' EXIT
           cp comet-spark-spark${{ inputs.spark-binary-version }}_${{ inputs.scala-binary-version }}-*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
@@ -158,51 +130,22 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/comet
-      - name: Upload benchmark result
+      - name: Upload comet benchmark result
         uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_comet_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
             benchmark-results/comet/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-auron:
-    name: Run benchmark on spark with auron
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
       - name: Get cached auron lib
         uses: actions/cache/restore@v5
         with:
           path: auron-spark-${{inputs.spark-binary-version}}*.jar
           key: ${{ inputs.auron-cache-key }}
           fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Run benchmark
+      - name: Run benchmark on auron
         run: |
+          # Remove this engine from the shared Spark installation even if the run fails.
+          trap 'rm -f "$SPARK_HOME"/jars/auron-spark-${{ inputs.spark-binary-version }}*.jar' EXIT
           cp auron-spark-${{inputs.spark-binary-version}}*.jar $SPARK_HOME/jars
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
@@ -226,51 +169,22 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/auron
-      - name: Upload benchmark result
+      - name: Upload auron benchmark result
         uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_auron_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
             benchmark-results/auron/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  run-benchmark-gluten:
-    name: Run benchmark on spark with gluten
-    runs-on: ${{ inputs.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: ${{ inputs.java-version }}
-      - name: Get cached benchmark lib
-        uses: actions/cache/restore@v5
-        with:
-          path: benchmarks-spark-native-*.jar
-          key: benchmarks-spark-native-lib-${{ hashFiles('pom.xml', '**/*.scala', '**/*.java') }}
-          fail-on-cache-miss: 'true'
-      - name: Get cached benchmark data
-        uses: actions/cache/restore@v5
-        with:
-          path: |
-            data/warehouse/*
-            data/metastore/*
-            check_files_${{ inputs.benchmark }}/*
-          key: benchmarks-data-${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          fail-on-cache-miss: 'true'
       - name: Get cached gluten lib
         uses: actions/cache/restore@v5
         with:
           path: gluten-velox-bundle-spark*.jar
           key: ${{ inputs.gluten-cache-key }}
           fail-on-cache-miss: 'true'
-      - name: Setup Spark
-        uses: ./.github/actions/setup-spark
-        with:
-          spark-version: ${{ inputs.spark-version }}
-          scala-binary-version: ${{ inputs.scala-binary-version }}
-      - name: Run benchmark
+      - name: Run benchmark on gluten
         run: |
+          # Remove this engine from the shared Spark installation even if the run fails.
+          trap 'rm -f "$SPARK_HOME"/jars/gluten-velox-bundle-spark*.jar' EXIT
           GLUTEN_JAR=$(realpath gluten-velox-bundle-spark*.jar)
           cp "$GLUTEN_JAR" "$SPARK_HOME/jars/"
           WAREHOUSE_PATH=$(pwd)/data/warehouse
@@ -292,40 +206,12 @@ jobs:
             --class cn.wangz.spark.benchmarks.Main \
             $BENCHMARK_JAR \
             benchmark --type=${{ inputs.benchmark }} --scale=${{ inputs.benchmark-scale }} --output=benchmark-results/gluten
-      - name: Upload benchmark result
+      - name: Upload gluten benchmark result
         uses: actions/upload-artifact@v6
         with:
           name: benchmark_result_gluten_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
           path: |
             benchmark-results/gluten/${{ inputs.benchmark }}_${{ inputs.benchmark-scale }}.json
-
-  report-benchmark:
-    name: Report benchmark result
-    runs-on: ubuntu-latest
-    if: always()
-    needs: [run-benchmark-vanilla, run-benchmark-auron, run-benchmark-comet, run-benchmark-gluten]
-    steps:
-      - uses: actions/checkout@v5
-      - name: Download vanilla benchmark result
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_vanilla_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/vanilla
-      - name: Download auron benchmark result
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_auron_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/auron
-      - name: Download comet benchmark result
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_comet_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/comet
-      - name: Download gluten benchmark result
-        uses: actions/download-artifact@v7
-        with:
-          name: benchmark_result_gluten_${{ inputs.benchmark }}-${{ inputs.benchmark-scale }}
-          path: benchmark-results/gluten
       - name: Generate comparison
         run: |
           ls -all
