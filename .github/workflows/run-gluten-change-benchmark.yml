@@ -164,7 +164,8 @@ jobs:
       - name: Run benchmark on spark with gluten (First)
         run: |
           rm -f $SPARK_HOME/jars/gluten-velox-bundle-spark*.jar
-          cp $(pwd)/engine-jars/first/gluten-velox-bundle-spark*.jar $SPARK_HOME/jars/
+          GLUTEN_JAR=$(realpath engine-jars/first/gluten-velox-bundle-spark*.jar)
+          cp "$GLUTEN_JAR" "$SPARK_HOME/jars/"
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -174,6 +175,8 @@ jobs:
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
             --conf spark.plugins=org.apache.gluten.GlutenPlugin \
+            --conf "spark.driver.extraClassPath=$GLUTEN_JAR" \
+            --conf "spark.executor.extraClassPath=$GLUTEN_JAR" \
             --conf spark.gluten.enabled=true \
             --conf spark.shuffle.manager=org.apache.spark.shuffle.sort.ColumnarShuffleManager \
             --conf spark.memory.offHeap.enabled=true \
@@ -184,7 +187,8 @@ jobs:
       - name: Run benchmark on spark with gluten (Second)
         run: |
           rm -f $SPARK_HOME/jars/gluten-velox-bundle-spark*.jar
-          cp $(pwd)/engine-jars/second/gluten-velox-bundle-spark*.jar $SPARK_HOME/jars/
+          GLUTEN_JAR=$(realpath engine-jars/second/gluten-velox-bundle-spark*.jar)
+          cp "$GLUTEN_JAR" "$SPARK_HOME/jars/"
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -194,6 +198,8 @@ jobs:
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
             --conf spark.driver.memory=4g \
             --conf spark.plugins=org.apache.gluten.GlutenPlugin \
+            --conf "spark.driver.extraClassPath=$GLUTEN_JAR" \
+            --conf "spark.executor.extraClassPath=$GLUTEN_JAR" \
             --conf spark.gluten.enabled=true \
             --conf spark.shuffle.manager=org.apache.spark.shuffle.sort.ColumnarShuffleManager \
             --conf spark.memory.offHeap.enabled=true \

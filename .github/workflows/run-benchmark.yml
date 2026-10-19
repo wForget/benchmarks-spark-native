@@ -271,7 +271,8 @@ jobs:
           scala-binary-version: ${{ inputs.scala-binary-version }}
       - name: Run benchmark
         run: |
-          cp gluten-velox-bundle-spark*.jar $SPARK_HOME/jars
+          GLUTEN_JAR=$(realpath gluten-velox-bundle-spark*.jar)
+          cp "$GLUTEN_JAR" "$SPARK_HOME/jars/"
           WAREHOUSE_PATH=$(pwd)/data/warehouse
           METASTORE_PATH=$(pwd)/data/metastore
           BENCHMARK_JAR=$(ls benchmarks-spark-native-*.jar)
@@ -279,6 +280,8 @@ jobs:
             --master local\[4\] \
             --conf spark.sql.warehouse.dir=$WAREHOUSE_PATH \
             --conf spark.hadoop.javax.jdo.option.ConnectionURL=jdbc:derby:\;databaseName=$METASTORE_PATH\;create=true \
+            --conf "spark.driver.extraClassPath=$GLUTEN_JAR" \
+            --conf "spark.executor.extraClassPath=$GLUTEN_JAR" \
             --conf spark.driver.extraJavaOptions="--add-modules=jdk.incubator.vector -Dio.netty.tryReflectionSetAccessible=true --enable-native-access=ALL-UNNAMED" \
             --conf spark.driver.memory=4g \
             --conf spark.plugins=org.apache.gluten.GlutenPlugin \
